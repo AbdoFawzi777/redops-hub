@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:hive/hive.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/security/vault_key_service.dart';
 import '../../domain/entities/vulnerability.dart';
 import '../models/vuln_model.dart';
 import 'vuln_seed_data.dart';
@@ -63,7 +64,23 @@ class VulnLocalDataSource {
     if (!Hive.isAdapterRegistered(AppConstants.typeIdVulnModel)) {
       Hive.registerAdapter(VulnModelAdapter());
     }
-    final box = await Hive.openBox<VulnModel>(AppConstants.boxVulns);
+    
+    final key = await VaultKeyService.getOrCreateKey();
+    Box<VulnModel> box;
+    try {
+      box = await Hive.openBox<VulnModel>(
+        AppConstants.boxVulns,
+        encryptionCipher: HiveAesCipher(key),
+      );
+    } catch (_) {
+      // If opening with encryption fails (e.g. if the box on disk was unencrypted),
+      // delete the local box files and open a fresh encrypted one.
+      await Hive.deleteBoxFromDisk(AppConstants.boxVulns);
+      box = await Hive.openBox<VulnModel>(
+        AppConstants.boxVulns,
+        encryptionCipher: HiveAesCipher(key),
+      );
+    }
     return VulnLocalDataSource(box);
   }
 }

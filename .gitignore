@@ -32,3 +32,8 @@ Thumbs.db
 .env
 *.env
 secrets.dart
+*.log
+*.txt
+TODO.md
+android/hs_err_*.log
+android/replay_*.log
