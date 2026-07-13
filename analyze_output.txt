@@ -1,5 +1,0 @@
-Resolving dependencies...
-Because no versions of hive_generator match >2.0.1 <3.0.0 and hive_generator 2.0.1 depends on source_gen ^1.0.0, hive_generator ^2.0.1 requires source_gen ^1.0.0.
-And because riverpod_generator >=3.0.0 depends on source_gen >=3.0.0 <5.0.0, hive_generator ^2.0.1 is incompatible with riverpod_generator >=3.0.0.
-So, because redops_hub depends on both riverpod_generator ^4.0.4 and hive_generator ^2.0.1, version solving failed.
-Failed to update packages.

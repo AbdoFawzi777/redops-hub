@@ -1,5 +1,0 @@
-00:00 +0: loading e:/redops_hub/test/widget_test.dart
-00:00 +0: RedOps Hub App navigation smoke test
-SPLASH: Screen Initialized
-SPLASH: Skipping delayed transition in debug mode
-00:01 +1: All tests passed!

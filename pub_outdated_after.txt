@@ -1,3 +1,0 @@
-The `--mode=null-safety` option is no longer supported.
-Consider using the Dart 2.19 sdk to migrate to null safety.
-Failed to update packages.
