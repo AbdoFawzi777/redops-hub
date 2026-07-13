@@ -1,0 +1,293 @@
+Flutter crash report.
+Please report a bug at https://github.com/flutter/flutter/issues.
+
+## command
+
+flutter test
+
+## exception
+
+RangeError: RangeError (start): Invalid value: Not in inclusive range 0..68: 69
+
+```
+#0      RangeError.checkValidRange (dart:core/errors.dart:387:7)
+#1      _StringBase.substring (dart:core-patch/string_patch.dart:440:27)
+#2      truncate (package:test_core/src/util/pretty_print.dart:65:21)
+#3      CompactReporter._progressLine (package:test_core/src/runner/reporter/compact.dart:406:35)
+#4      CompactReporter._onTestStarted (package:test_core/src/runner/reporter/compact.dart:204:7)
+#5      _rootRunUnary (dart:async/zone.dart:1546:13)
+#6      _CustomZone.runUnary (dart:async/zone.dart:1429:19)
+#7      _CustomZone.runUnaryGuarded (dart:async/zone.dart:1329:7)
+#8      _BufferingStreamSubscription._sendData (dart:async/stream_impl.dart:381:11)
+#9      _BufferingStreamSubscription._add (dart:async/stream_impl.dart:312:7)
+#10     _SyncBroadcastStreamController._sendData (dart:async/broadcast_stream_controller.dart:385:25)
+#11     _BroadcastStreamController.add (dart:async/broadcast_stream_controller.dart:257:5)
+#12     _rootRunUnary (dart:async/zone.dart:1538:47)
+#13     _CustomZone.runUnary (dart:async/zone.dart:1429:19)
+#14     _CustomZone.runUnaryGuarded (dart:async/zone.dart:1329:7)
+#15     _BufferingStreamSubscription._sendData (dart:async/stream_impl.dart:381:11)
+#16     _BufferingStreamSubscription._add (dart:async/stream_impl.dart:312:7)
+#17     _SyncBroadcastStreamController._sendData (dart:async/broadcast_stream_controller.dart:385:25)
+#18     _BroadcastStreamController.add (dart:async/broadcast_stream_controller.dart:257:5)
+#19     LiveSuiteController.reportLiveTest (package:test_core/src/runner/live_suite_controller.dart:133:30)
+#20     Engine._addLoadSuite (package:test_core/src/runner/engine.dart:468:16)
+#21     Engine.run.<anonymous closure>.<anonymous closure> (package:test_core/src/runner/engine.dart:274:34)
+<asynchronous suspension>
+#22     FutureGroup.add.<anonymous closure> (package:async/src/future_group.dart:79:15)
+<asynchronous suspension>
+```
+
+## flutter doctor
+
+```
+[32m[✓][39m Flutter
+    (Channel
+    stable,
+    3.38.9, on
+    Microsoft
+    Windows
+    [Version
+    10.0.26200
+    .8737],
+    locale
+    en-US)
+    [696ms]
+    [32m•[39m Flutter
+    version
+    3.38.9 on
+    channel
+    stable at
+    C:\src\flu
+    tter\flutt
+    er
+    [32m•[39m Upstream
+    repository
+    https://gi
+    thub.com/f
+    lutter/flu
+    tter.git
+    [32m•
+    [39m Framework
+    revision
+    67323de285
+    (5 months
+    ago),
+    2026-01-28
+    13:43:12
+    -0800
+    [32m•[39m Engine
+    revision
+    587c18f873
+    [32m•[39m Dart
+    version
+    3.10.8
+    [32m•[39m DevTools
+    version
+    2.51.1
+    [32m•[39m Feature
+    flags:
+    enable-web
+    ,
+    enable-lin
+    ux-desktop
+    ,
+    enable-mac
+    os-desktop
+    ,
+    enable-win
+    dows-deskt
+    op,
+    enable-and
+    roid,
+    enable-ios
+    ,
+    cli-animat
+    ions,
+    enable-nat
+    ive-assets
+    ,
+    omit-legac
+    y-version-
+    file,
+    enable-lld
+    b-debuggin
+    g
+
+[32m[✓][39m Windows
+    Version
+    (11 Pro
+    64-bit,
+    25H2,
+    2009)
+    [3.5s]
+
+[32m[✓][39m Android
+    toolchain
+    - develop
+    for
+    Android
+    devices
+    (Android
+    SDK
+    version
+    36.1.0-rc1
+    ) [5.9s]
+    [32m•[39m Android
+    SDK at
+    C:\Users\A
+    l-hamd\App
+    Data\Local
+    \Android\s
+    dk
+    [32m•[39m Emulator
+    version
+    36.3.10.0
+    (build_id
+    14472402)
+    (CL:N/A)
+    [32m•[39m Platform
+    android-36
+    ,
+    build-tool
+    s
+    36.1.0-rc1
+    [32m•[39m Java
+    binary at:
+    C:\Program
+    Files\Andr
+    oid\Androi
+    d
+    Studio\jbr
+    \bin\java
+    This is
+    the JDK
+    bundled
+    with the
+    latest
+    Android
+    Studio
+    installati
+    on on this
+    machine.
+    To
+    manually
+    set the
+    JDK path,
+    use:
+    `flutter
+    config
+    --jdk-dir=
+    "path/to/j
+    dk"`.
+    [32m•[39m Java
+    version
+    OpenJDK
+    Runtime
+    Environmen
+    t (build
+    21.0.10+-1
+    4961533-b1
+    163.108)
+    [32m•[39m All
+    Android
+    licenses
+    accepted.
+
+[32m[✓][39m Chrome -
+    develop
+    for the
+    web [20ms]
+    [32m•[39m Chrome
+    at
+    C:\Program
+    Files
+    (x86)\Goog
+    le\Chrome\
+    Applicatio
+    n\chrome.e
+    xe
+
+[31m[✗][39m Visual
+    Studio -
+    develop
+    Windows
+    apps
+    [16ms]
+    [31m✗[39m Visual
+    Studio not
+    installed;
+    this is
+    necessary
+    to develop
+    Windows
+    apps.
+    Download
+    at
+    https://vi
+    sualstudio
+    .microsoft
+    .com/downl
+    oads/.
+    Please
+    install
+    the
+    "Desktop
+    developmen
+    t with
+    C++"
+    workload,
+    including
+    all of its
+    default
+    components
+
+[32m[✓][39m Connected
+    device (3
+    available)
+    [691ms]
+    [32m•[39m Windows
+    (desktop)
+    • windows
+    •
+    windows-x6
+    4    •
+    Microsoft
+    Windows
+    [Version
+    10.0.26200
+    .8737]
+    [32m•[39m Chrome
+    (web)
+    • chrome
+    •
+    web-javasc
+    ript •
+    Google
+    Chrome
+    149.0.7827
+    .116
+    [32m•[39m Edge
+    (web)
+    • edge
+    •
+    web-javasc
+    ript •
+    Microsoft
+    Edge
+    150.0.4078
+    .48
+
+[32m[✓][39m Network
+    resources
+    [612ms]
+    [32m•[39m All
+    expected
+    network
+    resources
+    are
+    available.
+
+[33m![39m Doctor found
+  issues in 1
+  category.
+```
