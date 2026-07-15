@@ -1,5 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/datasources/vuln_local_datasource.dart';
+import '../../data/datasources/vuln_remote_datasource.dart';
 import '../../data/repositories/vuln_repository_impl.dart';
 import '../../domain/entities/vulnerability.dart';
 import '../../domain/repositories/vuln_repository.dart';
@@ -22,8 +24,15 @@ final vulnLocalDataSourceProvider = Provider<VulnLocalDataSource>((ref) {
   throw UnimplementedError('VulnLocalDataSource not initialized');
 });
 
+final vulnRemoteDataSourceProvider = Provider<VulnRemoteDataSource>((ref) {
+  return VulnRemoteDataSource(FirebaseFirestore.instance);
+});
+
 final vulnRepositoryProvider = Provider<VulnRepository>((ref) {
-  return VulnRepositoryImpl(ref.watch(vulnLocalDataSourceProvider));
+  return VulnRepositoryImpl(
+    ref.watch(vulnLocalDataSourceProvider),
+    ref.watch(vulnRemoteDataSourceProvider),
+  );
 });
 
 final getVulnsUseCaseProvider = Provider((ref) {

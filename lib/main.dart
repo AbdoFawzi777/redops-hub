@@ -1,11 +1,9 @@
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:redops_hub/core/firebase/firebase_bootstrap.dart';
 import 'package:redops_hub/core/router/app_router.dart';
 import 'package:redops_hub/core/theme/app_theme.dart';
 import 'package:redops_hub/features/vuln_tracker/data/datasources/vuln_local_datasource.dart';

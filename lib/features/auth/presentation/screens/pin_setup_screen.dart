@@ -52,9 +52,6 @@ class _PinSetupScreenState extends ConsumerState<PinSetupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryColor = isDark ? AppColors.redPrimary : AppColors.deepBlue;
-
     return Scaffold(
       body: SafeArea(
         child: Column(

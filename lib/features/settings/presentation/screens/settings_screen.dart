@@ -18,8 +18,6 @@ class SettingsScreen extends ConsumerWidget {
     final themeMode = ref.watch(themeModeProvider);
     final locale = ref.watch(languageProvider);
     final s = ref.watch(l10nProvider);
-    final isFirebaseReady = ref.watch(isFirebaseReadyProvider);
-    
     final auth = ref.watch(firebaseAuthProvider);
     final user = auth?.currentUser;
 

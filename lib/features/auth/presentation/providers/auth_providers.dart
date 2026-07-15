@@ -190,7 +190,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<void>> {
         idToken: googleAuth.idToken,
       );
 
-      await _auth!.signInWithCredential(credential);
+      await _auth.signInWithCredential(credential);
       state = const AsyncData(null);
     } catch (e, st) {
       state = AsyncError(e, st);
@@ -205,7 +205,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<void>> {
       }
       
       final GithubAuthProvider githubProvider = GithubAuthProvider();
-      await _auth!.signInWithProvider(githubProvider);
+      await _auth.signInWithProvider(githubProvider);
       state = const AsyncData(null);
     } catch (e, st) {
       state = AsyncError(e, st);
@@ -216,7 +216,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<void>> {
     state = const AsyncLoading();
     try {
       await _googleSignIn.signOut();
-      if (_auth != null) await _auth!.signOut();
+      if (_auth != null) await _auth.signOut();
       _ref.read(isSessionUnlockedProvider.notifier).state = false;
       _ref.read(isOfflineModeProvider.notifier).state = false;
       state = const AsyncData(null);
