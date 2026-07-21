@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -77,6 +77,7 @@ class SecurityService {
 
   // SECURITY HARDENING: Detect jailbroken devices or emulators to block sensitive functions
   Future<bool> isDeviceSafe() async {
+    if (kDebugMode) return true; // Bypass all security blocks during development/debug runs!
     if (kIsWeb) return true; // Web runs in sandboxed browser
     if (!Platform.isAndroid && !Platform.isIOS) return true; // Fallback for desktop testing
 
