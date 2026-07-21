@@ -19,6 +19,10 @@ class MainShell extends StatelessWidget {
     _TabItem(
         icon: Icons.terminal_outlined, label: 'VAULT', path: AppRoutes.vault),
     _TabItem(
+        icon: Icons.forum_outlined,
+        label: 'CHAT',
+        path: AppRoutes.chatForum),
+    _TabItem(
         icon: Icons.shield_outlined,
         label: 'PLAYBOOKS',
         path: AppRoutes.playbooks),
@@ -36,6 +40,78 @@ class MainShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final selectedIndex = _selectedIndex(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isLargeScreen = screenWidth > 750;
+
+    if (isLargeScreen) {
+      final activeColor = isDark ? AppColors.redPrimary : AppColors.deepBlue;
+      final inactiveColor =
+          isDark ? AppColors.textTertiary : AppColors.lightTextTertiary;
+
+      return Scaffold(
+        body: Row(
+          children: [
+            NavigationRail(
+              selectedIndex: selectedIndex,
+              onDestinationSelected: (index) => context.go(_tabs[index].path),
+              backgroundColor: isDark
+                  ? AppColors.cardBg.withValues(alpha: 0.96)
+                  : Colors.white.withValues(alpha: 0.95),
+              extended: screenWidth > 1000,
+              minWidth: 72,
+              minExtendedWidth: 200,
+              selectedIconTheme: IconThemeData(color: activeColor, size: 24),
+              unselectedIconTheme: IconThemeData(color: inactiveColor, size: 22),
+              selectedLabelTextStyle: TextStyle(
+                color: activeColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                letterSpacing: 0.5,
+              ),
+              unselectedLabelTextStyle: TextStyle(
+                color: inactiveColor,
+                fontSize: 11,
+                letterSpacing: 0.5,
+              ),
+              leading: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.shield_rounded, color: activeColor, size: 32),
+                    if (screenWidth > 1000) ...[
+                      const SizedBox(width: 12),
+                      Text(
+                        'REDOPS HUB',
+                        style: TextStyle(
+                          color: isDark
+                              ? AppColors.textPrimary
+                              : AppColors.lightTextPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 2,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              destinations: _tabs.map((tab) {
+                return NavigationRailDestination(
+                  icon: Icon(tab.icon),
+                  selectedIcon: Icon(tab.icon, color: activeColor),
+                  label: Text(tab.label),
+                );
+              }).toList(),
+            ),
+            const VerticalDivider(width: 1, thickness: 1),
+            Expanded(
+              child: child,
+            ),
+          ],
+        ),
+      );
+    }
 
     return Scaffold(
       body: child,

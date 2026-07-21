@@ -20,6 +20,7 @@ import 'package:redops_hub/features/payload_vault/presentation/screens/payload_v
 import 'package:redops_hub/features/dev_playbooks/presentation/screens/playbooks_screen.dart';
 import 'package:redops_hub/features/settings/presentation/screens/settings_screen.dart';
 import 'package:redops_hub/features/settings/presentation/screens/profile_screen.dart';
+import 'package:redops_hub/features/chat_forum/presentation/screens/chat_forum_screen.dart';
 import '../../shared/widgets/main_shell.dart';
 import 'app_routes.dart';
 
@@ -150,6 +151,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           path: AppRoutes.playbooks,
           pageBuilder: (context, state) => const NoTransitionPage(
             child: PlaybooksScreen(),
+          ),
+        ),
+        GoRoute(
+          path: AppRoutes.chatForum,
+          pageBuilder: (context, state) => const NoTransitionPage(
+            child: ChatForumScreen(),
           ),
         ),
         GoRoute(

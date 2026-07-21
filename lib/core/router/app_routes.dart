@@ -16,4 +16,5 @@ abstract final class AppRoutes {
   static const pinGate    = '/pin-gate';
   static const liveIntel  = '/vulns/live';
   static const hackerNews = '/vulns/hacker-news';
+  static const chatForum  = '/chat-forum';
 }
