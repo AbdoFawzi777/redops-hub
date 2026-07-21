@@ -142,6 +142,16 @@ class AuthNotifier extends StateNotifier<AsyncValue<void>> {
   Future<bool> authenticateWithBiometrics() async {
     if (_checkLockout()) return false;
 
+    // SECURITY HARDENING: Block access from rooted devices/emulators
+    final isSafe = await _ref.read(securityServiceProvider).isDeviceSafe();
+    if (!isSafe) {
+      state = AsyncError(
+        Exception('Security Failure: Access denied from unsafe environment (Rooted/Emulator detected).'),
+        StackTrace.current
+      );
+      return false;
+    }
+
     final success = await _ref.read(securityServiceProvider).authenticateWithBiometrics();
     if (success) {
       _ref.read(isSessionUnlockedProvider.notifier).state = true;
@@ -154,6 +164,16 @@ class AuthNotifier extends StateNotifier<AsyncValue<void>> {
 
   Future<bool> verifyPin(String pin) async {
     if (_checkLockout()) return false;
+
+    // SECURITY HARDENING: Block access from rooted devices/emulators
+    final isSafe = await _ref.read(securityServiceProvider).isDeviceSafe();
+    if (!isSafe) {
+      state = AsyncError(
+        Exception('Security Failure: Access denied from unsafe environment (Rooted/Emulator detected).'),
+        StackTrace.current
+      );
+      return false;
+    }
 
     final storedPin = _ref.read(pinCodeProvider);
     if (storedPin == pin) {
@@ -173,6 +193,12 @@ class AuthNotifier extends StateNotifier<AsyncValue<void>> {
   Future<void> signInWithGoogle() async {
     state = const AsyncLoading();
     try {
+      // SECURITY HARDENING: Block access from rooted devices/emulators
+      final isSafe = await _ref.read(securityServiceProvider).isDeviceSafe();
+      if (!isSafe) {
+        throw Exception('Security Failure: Access denied from unsafe environment (Rooted/Emulator detected).');
+      }
+
       if (_auth == null) {
         throw Exception('Firebase Tactical Link is currently offline. Please use Offline Mode.');
       }
@@ -200,6 +226,12 @@ class AuthNotifier extends StateNotifier<AsyncValue<void>> {
   Future<void> signInWithGitHub() async {
     state = const AsyncLoading();
     try {
+      // SECURITY HARDENING: Block access from rooted devices/emulators
+      final isSafe = await _ref.read(securityServiceProvider).isDeviceSafe();
+      if (!isSafe) {
+        throw Exception('Security Failure: Access denied from unsafe environment (Rooted/Emulator detected).');
+      }
+
       if (_auth == null) {
         throw Exception('Firebase Tactical Link is currently offline. Please use Offline Mode.');
       }

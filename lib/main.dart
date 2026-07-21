@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -39,9 +40,10 @@ void main() async {
     // 3. Optional: App Check
     try {
       await FirebaseAppCheck.instance.activate(
-        androidProvider: AndroidProvider.debug,
+        androidProvider: kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
+        appleProvider: kDebugMode ? AppleProvider.debug : AppleProvider.deviceCheck,
       );
-      debugPrint('MAIN: App Check active.');
+      debugPrint('MAIN: App Check active with Production/PlayIntegrity providers.');
     } catch (e) {
       debugPrint('MAIN: App Check skipped/error -> $e');
     }

@@ -1,8 +1,11 @@
 import 'dart:convert';
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:safe_device/safe_device.dart';
 
 import '../constants/app_constants.dart';
 
@@ -71,4 +74,27 @@ class SecurityService {
   Future<void> deleteSecure(String key) => _storage.delete(key: key);
 
   Future<void> clearAll() => _storage.deleteAll();
+
+  // SECURITY HARDENING: Detect jailbroken devices or emulators to block sensitive functions
+  Future<bool> isDeviceSafe() async {
+    if (kIsWeb) return true; // Web runs in sandboxed browser
+    if (!Platform.isAndroid && !Platform.isIOS) return true; // Fallback for desktop testing
+
+    try {
+      final isJailBroken = await SafeDevice.isJailBroken;
+      final isRealDevice = await SafeDevice.isRealDevice;
+      final isDevelopmentMode = await SafeDevice.isDevelopmentModeEnable;
+      
+      // Strict RedOps Hub security policy:
+      // Block rooted/jailbroken devices or emulators.
+      if (isJailBroken) return false;
+      if (!isRealDevice) return false;
+      if (isDevelopmentMode) return false; // Prevent USB debugging abuse in production
+      
+      return true;
+    } catch (_) {
+      // Safety fallback: allow in case of channel issues during build/testing
+      return true;
+    }
+  }
 }

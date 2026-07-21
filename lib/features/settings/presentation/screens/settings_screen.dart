@@ -1,3 +1,4 @@
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -106,6 +107,9 @@ class SettingsScreen extends ConsumerWidget {
                       loading: () => const SizedBox.shrink(),
                       error: (_, __) => const SizedBox.shrink(),
                     ),
+                    const Gap(24),
+                    _buildSectionHeader('WEB CONSOLE GATEWAY', isDark),
+                    _buildWebConsoleCard(context, isDark),
                     const Gap(24),
                     _buildSectionHeader('SYSTEM STATUS', isDark),
                     _buildSystemInfo(isDark),
@@ -300,4 +304,69 @@ class SettingsScreen extends ConsumerWidget {
       ),
     ).animate().shimmer(delay: 1.seconds, duration: 2.seconds);
   }
+
+  Future<void> _launchWebConsole() async {
+    final url = Uri.parse('https://redops-hub.web.app');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  Widget _buildWebConsoleCard(BuildContext context, bool isDark) {
+    final primaryColor = isDark ? AppColors.redPrimary : AppColors.deepBlue;
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.cardBg.withValues(alpha: 0.96) : Colors.white.withValues(alpha: 0.96),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: primaryColor.withValues(alpha: 0.16)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.dashboard_customize_outlined, color: primaryColor, size: 22),
+              const Gap(10),
+              Text(
+                'RedOps Hub Web Console',
+                style: TextStyle(
+                  color: isDark ? AppColors.textPrimary : AppColors.lightTextPrimary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const Gap(10),
+          Text(
+            'Unlock advanced operations on the big screen. Sync your mobile account to access C2 terminal shells, network recon scanner, credential vault, MITRE matrix mapping, and PDF report generator.',
+            style: TextStyle(
+              color: isDark ? AppColors.textTertiary : AppColors.lightTextTertiary,
+              fontSize: 11.5,
+              height: 1.5,
+            ),
+          ),
+          const Gap(16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _launchWebConsole,
+              icon: const Icon(Icons.open_in_new, size: 16),
+              label: const Text('LAUNCH WEB GATEWAY'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
 }
