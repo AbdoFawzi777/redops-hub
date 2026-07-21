@@ -17,4 +17,5 @@ abstract final class AppRoutes {
   static const liveIntel  = '/vulns/live';
   static const hackerNews = '/vulns/hacker-news';
   static const chatForum  = '/chat-forum';
+  static const webConsole = '/settings/web-console';
 }
