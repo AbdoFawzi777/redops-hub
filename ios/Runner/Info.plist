@@ -49,5 +49,7 @@
 	<string>This app requires microphone access to convert speech to text for field reporting.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>This app requires speech recognition access to convert your voice reports into text.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>This app requires Face ID access to securely unlock your tactical terminal.</string>
 </dict>
 </plist>
