@@ -9,6 +9,7 @@ import '../../../../shared/widgets/redops_header.dart';
 import '../../../../shared/widgets/tactical_loader.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../domain/entities/chat_message.dart';
+import '../../domain/entities/chat_group.dart';
 import '../providers/chat_providers.dart';
 
 class ChatForumScreen extends ConsumerStatefulWidget {
@@ -53,7 +54,6 @@ class _ChatForumScreenState extends ConsumerState<ChatForumScreen> {
     final duration = _recordSeconds == 0 ? 1 : _recordSeconds;
     setState(() => _isRecording = false);
     
-    // Send simulated voice note URL
     ref.read(chatControllerProvider.notifier).sendVoiceMessage(
       'mock_voice_note_${DateTime.now().millisecondsSinceEpoch}.aac',
       duration,
@@ -67,24 +67,185 @@ class _ChatForumScreenState extends ConsumerState<ChatForumScreen> {
     ref.read(chatControllerProvider.notifier).sendTextMessage(text);
   }
 
+  void _showGroupSelector(BuildContext context, List<ChatGroup> groups, String activeGroupId, Color primaryColor, bool isDark) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? AppColors.cardBg : Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Gap(12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(color: isDark ? AppColors.border : AppColors.lightBorder, borderRadius: BorderRadius.circular(2)),
+              ),
+              const Gap(16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20),
+                    child: Text(
+                      'CHAT ROOMS',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.group_add_outlined),
+                    color: primaryColor,
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _showCreateGroupDialog(context, primaryColor, isDark);
+                    },
+                    tooltip: 'Create Group',
+                  ),
+                ],
+              ),
+              const Divider(),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: groups.length,
+                  itemBuilder: (context, index) {
+                    final group = groups[index];
+                    final isActive = group.id == activeGroupId;
+                    return ListTile(
+                      onTap: () {
+                        ref.read(currentGroupIdProvider.notifier).state = group.id;
+                        Navigator.pop(context);
+                      },
+                      leading: Icon(
+                        group.id == 'lobby' ? Icons.public : Icons.group_work_outlined,
+                        color: isActive ? primaryColor : AppColors.textTertiary,
+                      ),
+                      title: Text(
+                        group.name,
+                        style: TextStyle(
+                          color: isDark ? AppColors.textPrimary : AppColors.lightTextPrimary,
+                          fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                      subtitle: Text(
+                        group.description,
+                        style: const TextStyle(fontSize: 11, color: AppColors.textTertiary),
+                      ),
+                      trailing: isActive ? Icon(Icons.check_circle_outline, color: primaryColor) : null,
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showCreateGroupDialog(BuildContext context, Color primaryColor, bool isDark) {
+    final nameController = TextEditingController();
+    final descController = TextEditingController();
+    final membersController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: isDark ? AppColors.cardBg : Colors.white,
+          title: const Text('CREATE PRIVATE GROUP'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(labelText: 'Group Name', hintText: 'e.g. RedTeam-01'),
+                ),
+                const Gap(12),
+                TextField(
+                  controller: descController,
+                  decoration: const InputDecoration(labelText: 'Description', hintText: 'Private briefing lounge'),
+                ),
+                const Gap(12),
+                TextField(
+                  controller: membersController,
+                  decoration: const InputDecoration(
+                    labelText: 'Invite Members (Emails)',
+                    hintText: 'user1@email.com, user2@email.com',
+                  ),
+                  maxLines: 2,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('CANCEL'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: primaryColor, foregroundColor: Colors.white),
+              onPressed: () {
+                final name = nameController.text.trim();
+                final desc = descController.text.trim();
+                final membersStr = membersController.text.trim();
+                if (name.isEmpty) return;
+
+                final List<String> members = membersStr.isNotEmpty
+                    ? membersStr.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList()
+                    : [];
+
+                ref.read(chatControllerProvider.notifier).createNewGroup(name, desc, members);
+                Navigator.pop(context);
+              },
+              child: const Text('CREATE'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = isDark ? AppColors.redPrimary : AppColors.deepBlue;
+    
     final messagesAsync = ref.watch(chatMessagesStreamProvider);
+    final groupsAsync = ref.watch(chatGroupsStreamProvider);
+    final activeGroupId = ref.watch(currentGroupIdProvider);
+    
     final auth = ref.watch(firebaseAuthProvider);
     final myEmail = auth?.currentUser?.email ?? '';
+
+    // Resolve active group info
+    final activeGroup = groupsAsync.maybeWhen(
+      data: (groups) => groups.firstWhere((g) => g.id == activeGroupId, 
+        orElse: () => ChatGroup(id: 'lobby', name: 'Public Lobby', description: 'Global operator lounge.', ownerEmail: '', members: [])),
+      orElse: () => ChatGroup(id: 'lobby', name: 'Public Lobby', description: 'Global operator lounge.', ownerEmail: '', members: []),
+    );
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
-            const RedOpsHeader(
-              title: 'TACTICAL FORUM',
-              subtitle: 'Secure operator exchange channel',
+            RedOpsHeader(
+              title: activeGroup.name.toUpperCase(),
+              subtitle: activeGroup.description,
               showBackButton: true,
+              trailing: groupsAsync.maybeWhen(
+                data: (groups) => IconButton(
+                  icon: const Icon(Icons.switch_left, color: AppColors.textTertiary),
+                  onPressed: () => _showGroupSelector(context, groups, activeGroupId, primaryColor, isDark),
+                  tooltip: 'Switch Room',
+                ),
+                orElse: () => const SizedBox.shrink(),
+              ),
             ),
-            // Network Warning / Security Notice
+            // Moderation Policy Banner
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -95,7 +256,7 @@ class _ChatForumScreenState extends ConsumerState<ChatForumScreen> {
                   Gap(8),
                   Expanded(
                     child: Text(
-                      'SECURE CHANNEL: File uploads and active exploit script exchanges are blocked.',
+                      'COMPLIANCE MONITOR: Profanity, politics, and military topics are strictly blocked.',
                       style: TextStyle(color: AppColors.criticalFg, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
                     ),
                   ),
@@ -112,9 +273,9 @@ class _ChatForumScreenState extends ConsumerState<ChatForumScreen> {
                         children: [
                           Icon(Icons.forum_outlined, size: 48, color: isDark ? AppColors.border : AppColors.lightBorder),
                           const Gap(12),
-                          const Text('NO MESSAGES YET', style: TextStyle(color: AppColors.textTertiary, fontWeight: FontWeight.bold, fontSize: 13)),
+                          const Text('SECURE ROOM INITIALIZED', style: TextStyle(color: AppColors.textTertiary, fontWeight: FontWeight.bold, fontSize: 13)),
                           const Gap(4),
-                          const Text('Start the conversation with the team.', style: TextStyle(color: AppColors.textTertiary, fontSize: 11)),
+                          const Text('All messages are protected with TLS/SSL tunnel.', style: TextStyle(color: AppColors.textTertiary, fontSize: 11)),
                         ],
                       ),
                     );
@@ -156,7 +317,6 @@ class _ChatForumScreenState extends ConsumerState<ChatForumScreen> {
       ),
       child: Row(
         children: [
-          // Voice recording gesture detector
           GestureDetector(
             onLongPressStart: (_) => _startRecording(),
             onLongPressEnd: (_) => _stopAndSendRecording(),
@@ -242,6 +402,8 @@ class _MessageBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryColor = isDark ? AppColors.redPrimary : AppColors.deepBlue;
+    final isBlocked = message.text.contains('BLOCKED');
+    final isSecurity = message.text.contains('SECURITY NOTICE');
 
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
@@ -256,6 +418,20 @@ class _MessageBubble extends StatelessWidget {
                 style: TextStyle(color: isMe ? primaryColor : AppColors.textSecondary, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
               ),
               const Gap(6),
+              // User achievements rank tag badge
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                decoration: BoxDecoration(
+                  color: isMe ? primaryColor.withValues(alpha: 0.1) : AppColors.border.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: isMe ? primaryColor.withValues(alpha: 0.2) : Colors.transparent),
+                ),
+                child: Text(
+                  message.senderRank,
+                  style: TextStyle(color: isMe ? primaryColor : AppColors.textSecondary, fontSize: 7, fontWeight: FontWeight.bold),
+                ),
+              ),
+              const Gap(6),
               Text(
                 DateFormat('HH:mm').format(message.timestamp),
                 style: const TextStyle(color: AppColors.textTertiary, fontSize: 8),
@@ -266,9 +442,9 @@ class _MessageBubble extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: isMe 
-                  ? primaryColor.withValues(alpha: 0.15) 
-                  : (isDark ? AppColors.bg800 : AppColors.lightScaffold),
+              color: isBlocked || isSecurity
+                  ? AppColors.criticalFg.withValues(alpha: 0.08)
+                  : (isMe ? primaryColor.withValues(alpha: 0.15) : (isDark ? AppColors.bg800 : AppColors.lightScaffold)),
               borderRadius: BorderRadius.only(
                 topLeft: const Radius.circular(12),
                 topRight: const Radius.circular(12),
@@ -276,7 +452,9 @@ class _MessageBubble extends StatelessWidget {
                 bottomRight: isMe ? Radius.zero : const Radius.circular(12),
               ),
               border: Border.all(
-                color: isMe ? primaryColor : (isDark ? AppColors.border : AppColors.lightBorder),
+                color: isBlocked || isSecurity
+                    ? AppColors.criticalFg
+                    : (isMe ? primaryColor : (isDark ? AppColors.border : AppColors.lightBorder)),
                 width: 1,
               ),
             ),
@@ -288,16 +466,18 @@ class _MessageBubble extends StatelessWidget {
   }
 
   Widget _buildTextBody(bool isDark, Color primaryColor) {
-    final isSecurityNotice = message.text.contains('SECURITY NOTICE');
+    final isBlocked = message.text.contains('BLOCKED');
+    final isSecurity = message.text.contains('SECURITY NOTICE');
+    
     return Text(
       message.text,
       style: TextStyle(
-        color: isSecurityNotice 
+        color: isBlocked || isSecurity
             ? AppColors.criticalFg 
             : (isDark ? AppColors.textPrimary : AppColors.lightTextPrimary),
         fontSize: 13,
-        fontWeight: isSecurityNotice ? FontWeight.bold : FontWeight.normal,
-        fontFamily: isSecurityNotice ? 'monospace' : null,
+        fontWeight: isBlocked || isSecurity ? FontWeight.bold : FontWeight.normal,
+        fontFamily: isBlocked || isSecurity ? 'monospace' : null,
       ),
     );
   }
@@ -308,7 +488,6 @@ class _MessageBubble extends StatelessWidget {
       children: [
         Icon(Icons.play_arrow_rounded, color: primaryColor, size: 24),
         const Gap(8),
-        // Visual soundwave simulation
         Row(
           mainAxisSize: MainAxisSize.min,
           children: List.generate(10, (index) {

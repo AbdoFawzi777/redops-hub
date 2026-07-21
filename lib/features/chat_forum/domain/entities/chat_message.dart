@@ -7,6 +7,8 @@ class ChatMessage {
   final bool isVoice;
   final String? voiceUrl; // Mock URL or base64 data
   final int? voiceDuration; // Duration in seconds
+  final String groupId; // Maps to specific private group, e.g. 'lobby'
+  final String senderRank; // Operator tag based on vulnerability findings count
 
   ChatMessage({
     required this.id,
@@ -17,6 +19,8 @@ class ChatMessage {
     required this.isVoice,
     this.voiceUrl,
     this.voiceDuration,
+    this.groupId = 'lobby',
+    this.senderRank = 'ROOKIE OPERATOR',
   });
 
   Map<String, dynamic> toJson() {
@@ -29,6 +33,8 @@ class ChatMessage {
       'isVoice': isVoice,
       'voiceUrl': voiceUrl,
       'voiceDuration': voiceDuration,
+      'groupId': groupId,
+      'senderRank': senderRank,
     };
   }
 
@@ -42,6 +48,8 @@ class ChatMessage {
       isVoice: json['isVoice'] ?? false,
       voiceUrl: json['voiceUrl'],
       voiceDuration: json['voiceDuration'],
+      groupId: json['groupId'] ?? 'lobby',
+      senderRank: json['senderRank'] ?? 'ROOKIE OPERATOR',
     );
   }
 }
