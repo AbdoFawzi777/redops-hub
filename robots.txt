@@ -1,6 +1,2 @@
 User-agent: *
 Allow: /
-Disallow: /functions/
-Disallow: /private/
-
-Sitemap: https://redops-hub.web.app/sitemap.xml
