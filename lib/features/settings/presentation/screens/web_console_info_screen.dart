@@ -9,8 +9,12 @@ class WebConsoleInfoScreen extends StatelessWidget {
 
   Future<void> _launchWebConsole() async {
     final url = Uri.parse('https://redops-hub.web.app');
-    if (await canLaunchUrl(url)) {
+    try {
       await launchUrl(url, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      try {
+        await launchUrl(url, mode: LaunchMode.platformDefault);
+      } catch (_) {}
     }
   }
 
