@@ -1,11 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:redops_hub/core/theme/app_colors.dart';
 import 'package:redops_hub/core/theme/app_text_styles.dart';
 
-// Default to LIGHT mode as requested
-final themeModeProvider = StateProvider<ThemeMode>((ref) => ThemeMode.light);
-final languageProvider = StateProvider<Locale>((ref) => const Locale('en'));
+// Persistent Theme and Language Provider
+final themeModeProvider = StateProvider<ThemeMode>((ref) {
+  try {
+    final box = Hive.box('redops_settings');
+    final themeIndex = box.get('theme_mode');
+    if (themeIndex != null) {
+      return ThemeMode.values[themeIndex];
+    }
+  } catch (_) {}
+  return ThemeMode.light;
+});
+
+final languageProvider = StateProvider<Locale>((ref) {
+  try {
+    final box = Hive.box('redops_settings');
+    final langCode = box.get('language_code');
+    if (langCode != null) {
+      return Locale(langCode);
+    }
+  } catch (_) {}
+  return const Locale('en');
+});
 
 abstract final class AppTheme {
   static ThemeData get light => ThemeData(

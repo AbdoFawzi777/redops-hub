@@ -12,8 +12,12 @@ final firebaseBootstrapProvider = Provider<FirebaseBootstrapService>(
     (ref) => FirebaseBootstrapService.instance);
 
 final firebaseAuthProvider = Provider<FirebaseAuth?>((ref) {
-  if (Firebase.apps.isEmpty) return null;
-  return FirebaseAuth.instance;
+  try {
+    if (Firebase.apps.isEmpty) return null;
+    return FirebaseAuth.instance;
+  } catch (_) {
+    return null;
+  }
 });
 
 final isFirebaseReadyProvider =

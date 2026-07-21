@@ -14,12 +14,20 @@ class FirebaseBootstrapService {
   FirebaseBootstrapService._();
   static final instance = FirebaseBootstrapService._();
 
-  bool get isReady => Firebase.apps.isNotEmpty;
+  bool get isReady {
+    try {
+      return Firebase.apps.isNotEmpty;
+    } catch (_) {
+      return false;
+    }
+  }
   
   String get statusMessage {
-    if (Firebase.apps.isNotEmpty) {
-      return 'Secure Tactical Link Established';
-    }
+    try {
+      if (Firebase.apps.isNotEmpty) {
+        return 'Secure Tactical Link Established';
+      }
+    } catch (_) {}
     return 'Local Protocol Active (Offline)';
   }
 

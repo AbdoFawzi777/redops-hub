@@ -78,6 +78,21 @@ class RedOpsHubApp extends ConsumerWidget {
     final locale = ref.watch(languageProvider);
     final router = ref.watch(appRouterProvider);
 
+    // Save preferences to Hive when changed
+    ref.listen<ThemeMode>(themeModeProvider, (previous, next) {
+      try {
+        final box = Hive.box('redops_settings');
+        box.put('theme_mode', next.index);
+      } catch (_) {}
+    });
+
+    ref.listen<Locale>(languageProvider, (previous, next) {
+      try {
+        final box = Hive.box('redops_settings');
+        box.put('language_code', next.languageCode);
+      } catch (_) {}
+    });
+
     return MaterialApp.router(
       title: 'RedOps Hub',
       debugShowCheckedModeBanner: false,
