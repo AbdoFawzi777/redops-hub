@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /*#hq_terminal_omega*
+Disallow: /*/private/
+Disallow: /functions/
+
+Sitemap: https://redops-hub.web.app/sitemap.xml
