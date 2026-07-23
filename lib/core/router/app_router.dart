@@ -39,7 +39,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: AppRoutes.splash,
+    initialLocation: AppRoutes.login,
     refreshListenable: listenable,
     redirect: (context, state) {
       final currentPath = state.uri.toString();

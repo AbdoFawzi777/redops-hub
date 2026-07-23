@@ -6,8 +6,8 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/localization/app_translations.dart';
-import '../../../../shared/widgets/redops_header.dart';
 import '../../../../shared/widgets/tactical_loader.dart';
+import '../../../../shared/widgets/responsive_text.dart';
 import '../../domain/entities/vulnerability.dart';
 import '../providers/vuln_providers.dart';
 import '../widgets/vuln_card.dart';
@@ -30,39 +30,20 @@ class _VulnTrackerScreenState extends ConsumerState<VulnTrackerScreen> {
     final s = ref.watch(l10nProvider);
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      floatingActionButton: FloatingActionButton.extended(
+      backgroundColor: AppColors.dynamicBg(context),
+      floatingActionButton: FloatingActionButton(
         onPressed: () => context.push(AppRoutes.vulnCreate),
-        backgroundColor: AppColors.redPrimary,
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: Text(
-          s.newFinding,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, letterSpacing: 1.5),
-        ),
-      ).animate().scale(delay: 500.ms, curve: Curves.elasticOut),
+        backgroundColor: AppColors.v3OpsRed, // #E02E2E
+        child: const Icon(Icons.add, color: Colors.white, size: 28),
+      ).animate().scale(delay: 400.ms, curve: Curves.elasticOut),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            RedOpsHeader(
-              title: s.vulnsTitle,
-              subtitle: s.vulnsSubtitle,
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.public_rounded, color: AppColors.textTertiary),
-                    onPressed: () => context.push(AppRoutes.hackerNews),
-                    tooltip: 'Hacker Intelligence',
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.rss_feed_rounded, color: AppColors.redPrimary),
-                    onPressed: () => context.push(AppRoutes.liveIntel),
-                    tooltip: 'Live CVE Feed',
-                  ),
-                ],
-              ),
-            ),
+            _buildTopHeader(),
+            const Gap(12),
+            _buildTitleSection(s),
+            const Gap(14),
             statsAsync.when(
               data: (stats) => VulnStatsRow(
                 total: stats.total,
@@ -73,21 +54,22 @@ class _VulnTrackerScreenState extends ConsumerState<VulnTrackerScreen> {
               loading: () => const SizedBox(height: 72),
               error: (_, __) => const SizedBox.shrink(),
             ),
-            const Gap(16),
+            const Gap(14),
             _SearchBar(
               query: filter.query,
+              hint: s.searchHint,
               onChanged: (q) => ref.read(vulnFilterProvider.notifier).state =
                   filter.copyWith(query: q),
             ),
-            const Gap(12),
+            const Gap(10),
             _FilterChips(filter: filter),
             const Gap(8),
             Expanded(
               child: Stack(
                 children: [
                   RefreshIndicator(
-                    backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppColors.bg800 : AppColors.lightSurface,
-                    color: AppColors.redPrimary,
+                    backgroundColor: AppColors.dynamicCardBg(context),
+                    color: AppColors.v3Critical,
                     onRefresh: () async {
                       setState(() => _isManualRefreshing = true);
                       ref.invalidate(vulnsStreamProvider);
@@ -100,7 +82,7 @@ class _VulnTrackerScreenState extends ConsumerState<VulnTrackerScreen> {
                           return SingleChildScrollView(
                             physics: const AlwaysScrollableScrollPhysics(),
                             child: SizedBox(
-                              height: 400,
+                              height: 350,
                               child: _EmptyState(
                                 onCreate: () => context.push(AppRoutes.vulnCreate),
                               ),
@@ -109,9 +91,9 @@ class _VulnTrackerScreenState extends ConsumerState<VulnTrackerScreen> {
                         }
                         return ListView.separated(
                           physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
                           itemCount: vulns.length,
-                          separatorBuilder: (_, __) => const Gap(16),
+                          separatorBuilder: (_, __) => const Gap(12),
                           itemBuilder: (context, index) {
                             final vuln = vulns[index];
                             return VulnCard(
@@ -128,17 +110,19 @@ class _VulnTrackerScreenState extends ConsumerState<VulnTrackerScreen> {
                       error: (e, _) => Center(
                         child: Text(
                           'FAILED TO LOAD INTEL: $e',
-                          style: const TextStyle(color: AppColors.criticalFg, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            color: AppColors.v3Critical,
+                            fontFamily: 'monospace',
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                  
-                  // Show tactical loader overlay ONLY during manual pull-to-refresh
                   if (_isManualRefreshing)
                     Positioned.fill(
                       child: Container(
-                        color: Colors.black.withValues(alpha: 0.3),
+                        color: Colors.black.withValues(alpha: 0.4),
                         child: const Center(child: TacticalLoader(size: 120)),
                       ),
                     ).animate().fadeIn(duration: 300.ms),
@@ -150,60 +134,148 @@ class _VulnTrackerScreenState extends ConsumerState<VulnTrackerScreen> {
       ),
     );
   }
+
+  Widget _buildTopHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: AppColors.v3Critical.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: AppColors.v3Critical.withValues(alpha: 0.3),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: const BoxDecoration(
+                    color: AppColors.v3Critical,
+                    shape: BoxShape.circle,
+                  ),
+                ).animate(onPlay: (c) => c.repeat(reverse: true)).fade(begin: 0.3, end: 1.0),
+                const Gap(6),
+                const Text(
+                  'THREATS',
+                  style: TextStyle(
+                    color: AppColors.v3Critical,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'monospace',
+                    letterSpacing: 1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Row(
+            children: [
+              IconButton(
+                icon: Icon(Icons.public_rounded, color: AppColors.dynamicTextMuted(context), size: 20),
+                onPressed: () => context.push(AppRoutes.hackerNews),
+                tooltip: 'Hacker Intelligence',
+              ),
+              IconButton(
+                icon: const Icon(Icons.rss_feed_rounded, color: AppColors.v3Critical, size: 20),
+                onPressed: () => context.push(AppRoutes.liveIntel),
+                tooltip: 'Live CVE Feed',
+              ),
+              const Gap(4),
+              const Text(
+                '5 OPEN',
+                style: TextStyle(
+                  color: AppColors.v3Warning,
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'monospace',
+                ),
+              ),
+            ],
+          ),
+        ],
+      ).animate().fadeIn(duration: 400.ms),
+    );
+  }
+
+  Widget _buildTitleSection(AppStrings s) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TacticalTitle(
+            s.vulnsTitle,
+            isHeading: true,
+            color: AppColors.dynamicTextPrimary(context),
+          ),
+          const Gap(2),
+          Text(
+            s.vulnsSubtitle,
+            style: TextStyle(
+              color: AppColors.dynamicTextMuted(context),
+              fontSize: 11.5,
+              fontFamily: 'monospace',
+            ),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(delay: 150.ms);
+  }
 }
 
 class _SearchBar extends ConsumerWidget {
-  const _SearchBar({required this.query, required this.onChanged});
+  const _SearchBar({required this.query, required this.hint, required this.onChanged});
 
   final String query;
+  final String hint;
   final ValueChanged<String> onChanged;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final s = ref.watch(l10nProvider);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: TextField(
         onChanged: onChanged,
         style: TextStyle(
-          color: isDark ? AppColors.textPrimary : AppColors.lightTextPrimary, 
-          fontSize: 14, 
-          fontFamily: 'monospace'
+          color: AppColors.dynamicTextPrimary(context),
+          fontSize: 13,
+          fontFamily: 'monospace',
         ),
         decoration: InputDecoration(
-          hintText: s.searchHint,
+          hintText: hint,
           hintStyle: TextStyle(
-            color: isDark ? AppColors.textTertiary : AppColors.lightTextTertiary, 
-            fontSize: 13, 
-            letterSpacing: 1
+            color: AppColors.dynamicTextMuted(context),
+            fontSize: 11.5,
+            fontFamily: 'monospace',
+            letterSpacing: 0.5,
           ),
           prefixIcon: Icon(
-            Icons.search, 
-            color: isDark ? AppColors.redPrimary : AppColors.deepBlue, 
-            size: 20
+            Icons.search,
+            color: AppColors.dynamicTextMuted(context),
+            size: 18,
           ),
           filled: true,
-          fillColor: isDark ? AppColors.bg800 : AppColors.lightSurface,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          fillColor: AppColors.dynamicCardBg(context),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(
-              color: isDark ? AppColors.border : AppColors.lightBorder, 
-              width: 1
-            ),
+            borderSide: BorderSide(color: AppColors.dynamicCardBorder(context), width: 1),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(
-              color: isDark ? AppColors.redPrimary : AppColors.deepBlue, 
-              width: 2
-            ),
+            borderSide: const BorderSide(color: AppColors.v3Critical, width: 1.5),
           ),
         ),
       ),
-    ).animate().fadeIn(delay: 300.ms).slideX(begin: 0.1, end: 0);
+    ).animate().fadeIn(delay: 250.ms);
   }
 }
 
@@ -215,10 +287,10 @@ class _FilterChips extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return SizedBox(
-      height: 38,
+      height: 32,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         children: [
           _FilterChip(
             label: 'ALL',
@@ -226,10 +298,10 @@ class _FilterChips extends ConsumerWidget {
             onTap: () => ref.read(vulnFilterProvider.notifier).state =
                 filter.copyWith(clearSeverity: true, clearStatus: true),
           ),
-          const Gap(10),
+          const Gap(8),
           ...VulnSeverity.values.map((s) {
             return Padding(
-              padding: const EdgeInsets.only(right: 10),
+              padding: const EdgeInsets.only(right: 8),
               child: _FilterChip(
                 label: s.label.toUpperCase(),
                 selected: filter.severity == s,
@@ -245,15 +317,15 @@ class _FilterChips extends ConsumerWidget {
           }),
         ],
       ),
-    ).animate().fadeIn(delay: 400.ms);
+    ).animate().fadeIn(delay: 350.ms);
   }
 
   Color _severityColor(VulnSeverity s) => switch (s) {
-        VulnSeverity.critical => AppColors.criticalFg,
-        VulnSeverity.high => AppColors.highFg,
-        VulnSeverity.medium => AppColors.mediumFg,
-        VulnSeverity.low => AppColors.lowFg,
-        VulnSeverity.info => AppColors.infoFg,
+        VulnSeverity.critical => AppColors.v3Critical,
+        VulnSeverity.high => AppColors.v3Warning,
+        VulnSeverity.medium => AppColors.v3Intel,
+        VulnSeverity.low => AppColors.v3Live,
+        VulnSeverity.info => AppColors.v3Intel,
       };
 }
 
@@ -272,36 +344,29 @@ class _FilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final activeColor = color ?? (isDark ? AppColors.redPrimary : AppColors.deepBlue);
-    
+    final activeColor = color ?? AppColors.v3Critical;
+
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: 250.ms,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: selected 
-              ? activeColor.withValues(alpha: 0.15) 
-              : (isDark ? AppColors.cardBg : AppColors.lightSurface),
-          borderRadius: BorderRadius.circular(8),
+          color: selected ? activeColor.withValues(alpha: 0.15) : AppColors.dynamicCardBg(context),
+          borderRadius: BorderRadius.circular(6),
           border: Border.all(
-            color: selected ? activeColor : (isDark ? AppColors.border : AppColors.lightBorder),
-            width: selected ? 1.5 : 1,
+            color: selected ? activeColor : AppColors.dynamicCardBorder(context),
+            width: 1,
           ),
-          boxShadow: selected ? [
-            BoxShadow(color: activeColor.withValues(alpha: 0.1), blurRadius: 8)
-          ] : null,
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: selected 
-                ? activeColor 
-                : (isDark ? AppColors.textSecondary : AppColors.lightTextSecondary),
-            fontSize: 11,
+            color: selected ? activeColor : AppColors.dynamicTextMuted(context),
+            fontSize: 10,
+            fontFamily: 'monospace',
             fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
+            letterSpacing: 0.5,
           ),
         ),
       ),
@@ -316,50 +381,52 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryColor = isDark ? AppColors.redPrimary : AppColors.deepBlue;
-
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
             Icons.security_update_warning_outlined,
-            size: 80,
-            color: primaryColor.withValues(alpha: 0.3),
+            size: 64,
+            color: AppColors.v3Critical.withValues(alpha: 0.4),
           ).animate(onPlay: (c) => c.repeat()).shake(hz: 2, duration: 2.seconds),
-          const Gap(24),
+          const Gap(16),
           Text(
             'NO VULNERABILITIES DETECTED',
             style: TextStyle(
-              color: isDark ? AppColors.textPrimary : AppColors.lightTextPrimary,
-              fontSize: 18,
+              color: AppColors.dynamicTextPrimary(context),
+              fontSize: 15,
               fontWeight: FontWeight.w900,
-              letterSpacing: 1,
+              fontFamily: 'monospace',
+              letterSpacing: 0.5,
             ),
           ),
-          const Gap(12),
+          const Gap(8),
           Text(
-            'Initial scanning complete. No active findings in this scope.',
+            'No active findings matching current scope.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: isDark ? AppColors.textTertiary : AppColors.lightTextTertiary, 
-              fontSize: 13
+              color: AppColors.dynamicTextMuted(context),
+              fontSize: 11.5,
+              fontFamily: 'monospace',
             ),
           ),
-          const Gap(32),
+          const Gap(24),
           OutlinedButton.icon(
             onPressed: onCreate,
-            icon: const Icon(Icons.add_moderator),
-            label: const Text('MANUAL ENTRY'),
+            icon: const Icon(Icons.add, size: 16),
+            label: const Text(
+              'MANUAL ENTRY',
+              style: TextStyle(fontFamily: 'monospace', fontSize: 11, fontWeight: FontWeight.bold),
+            ),
             style: OutlinedButton.styleFrom(
-              side: BorderSide(color: primaryColor),
-              foregroundColor: primaryColor,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              side: const BorderSide(color: AppColors.v3Critical),
+              foregroundColor: AppColors.v3Critical,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             ),
           ),
         ],
       ),
-    ).animate().fadeIn(duration: 800.ms).scale(begin: const Offset(0.9, 0.9));
+    ).animate().fadeIn(duration: 600.ms);
   }
 }

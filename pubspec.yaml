@@ -28,6 +28,7 @@ dependencies:
   crypto: ^3.0.3
   local_auth: ^2.3.0
   dio: ^5.4.3
+  http: ^1.2.1
   web_socket_channel: ^3.0.3
   connectivity_plus: ^6.0.1
   url_launcher: ^6.3.1
@@ -45,6 +46,7 @@ dependencies:
 
   permission_handler: ^11.3.1
   speech_to_text: ^7.0.0
+  audioplayers: ^6.1.0
   cloud_firestore: ^5.6.12
   firebase_messaging: ^15.2.10
   safe_device: ^1.4.1
@@ -74,6 +76,7 @@ flutter:
   assets:
     - assets/icons/
     - assets/images/
+    - assets/sounds/
     - assets/payloads/web/
     - assets/payloads/active_directory/
     - assets/payloads/privilege_escalation/

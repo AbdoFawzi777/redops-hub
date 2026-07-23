@@ -121,7 +121,21 @@ class ChatRemoteDataSource {
     await docRef.set(message.toJson());
   }
 
-  // Strict moderation algorithm covering profanity, politics, and military domains
+  // Delete message (Owner or Sender)
+  Future<void> deleteMessage(String messageId) async {
+    await _firestore.collection('chat_messages').doc(messageId).delete();
+  }
+
+  // Edit text message
+  Future<void> editMessage(String messageId, String newText) async {
+    final moderatedText = _moderateAndSanitizeInput(newText);
+    await _firestore.collection('chat_messages').doc(messageId).update({
+      'text': moderatedText,
+      'isEdited': true,
+    });
+  }
+
+  // Strict moderation algorithm covering profanity, politics, and military domains in Arabic & English
   String _moderateAndSanitizeInput(String input) {
     if (input.isEmpty) return input;
 
@@ -144,26 +158,34 @@ class ChatRemoteDataSource {
       }
     }
 
-    // C. Moderation Domain blocklists (Profanity, Politics, Military)
+    // Normalize Arabic letters for robust matching (tashkeel, alef, yeh, teh marbuta)
+    String normalized = sanitized.toLowerCase()
+        .replaceAll(RegExp(r'[\u064B-\u0652]'), '') // Remove Arabic tashkeel/diacritics
+        .replaceAll(RegExp(r'[أإآA-Za-z0-9_]*أ|[أإآ]'), 'ا')
+        .replaceAll('ة', 'ه')
+        .replaceAll('ى', 'ي');
+
+    // C. Comprehensive Arabic & English Moderation Domain Blocklists
     final List<String> blocklist = [
       // English Profanity
-      'fuck', 'shit', 'asshole', 'bitch', 'bastard', 'cunt', 'dick', 'pussy',
-      // Arabic Profanity/Swearing
-      'شرموط', 'كس', 'منيوك', 'قحبة', 'خول', 'عرص', 'يا ابن ال', 'كلب', 'حمار', 'تفو', 'امك', 'ابوك', 'شاذ',
+      'fuck', 'shit', 'asshole', 'bitch', 'bastard', 'cunt', 'dick', 'pussy', 'whore', 'slut',
+      // Arabic Profanity / Swearing & Insults (Normalized)
+      'شرموط', 'كس', 'منيوك', 'قحبه', 'خول', 'عرص', 'ابن الكلب', 'ابن القحبه', 'ابن الحرام', 
+      'كلب', 'حمار', 'تفو', 'امك', 'ابوك', 'شاذ', 'قواد', 'ياابن', 'زب', 'طيز', 'كسختك',
+      'وسخ', 'حقير', 'يا كلب', 'يا حمار', 'منحرف', 'داعش', 'ارهاب',
       // English Politics
       'politics', 'political', 'president', 'government', 'election', 'minister', 'democracy', 'parliament', 'coup', 'revolution',
       // Arabic Politics
-      'سياسة', 'سياسي', 'رئيس', 'حكومة', 'انتخابات', 'وزير', 'برلمان', 'انقلاب', 'ديمقراطية', 'حزب', 'أحزاب', 'ثورة', 'شعب',
+      'سياسه', 'سياسي', 'رئيس', 'حكومه', 'انتخابات', 'وزير', 'برلمان', 'انقلاب', 'ديمقراطيه', 'حزب', 'احزاب', 'ثوره', 'شعب',
       // English Military
       'military', 'army', 'soldier', 'weapon', 'war', 'troops', 'battlefield', 'missile', 'combat', 'artillery', 'warfare',
       // Arabic Military
-      'جيش', 'عسكري', 'سلاح', 'حرب', 'جنود', 'معركة', 'صاروخ', 'قتال', 'قوات مسلح', 'دفاع', 'كتائب', 'ميليشيا', 'احتلال',
+      'جيش', 'عسكري', 'سلاح', 'حرب', 'جنود', 'معركه', 'صاروخ', 'قتال', 'قوات مسلحه', 'دفاع', 'كتائب', 'ميليشيا', 'احتلال',
     ];
 
-    final inputLower = sanitized.toLowerCase();
     for (var word in blocklist) {
-      if (inputLower.contains(word)) {
-        return '[MESSAGE BLOCKED: Message violates communication protocol (Profanity/Politics/Military policy)]';
+      if (normalized.contains(word)) {
+        return '[تم حجب الرسالة: تم اكتشاف محتوى مخالف لبروتوكول التواصل (سب/سياسة/عسكري)]';
       }
     }
 

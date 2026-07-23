@@ -3,9 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/localization/app_translations.dart';
 import '../../domain/entities/vulnerability.dart';
-import '../../../../shared/widgets/severity_badge.dart';
 
 class VulnCard extends StatelessWidget {
   const VulnCard({
@@ -20,185 +18,167 @@ class VulnCard extends StatelessWidget {
   final int index;
 
   Color get _severityColor => switch (vulnerability.severity) {
-        VulnSeverity.critical => AppColors.criticalFg,
-        VulnSeverity.high => AppColors.highFg,
-        VulnSeverity.medium => AppColors.mediumFg,
-        VulnSeverity.low => AppColors.lowFg,
-        VulnSeverity.info => AppColors.infoFg,
+        VulnSeverity.critical => AppColors.v3Critical, // #FF3B3B
+        VulnSeverity.high => AppColors.v3Warning,   // #FF9F00
+        VulnSeverity.medium => AppColors.v3Intel,   // #00D4FF
+        VulnSeverity.low => AppColors.v3Live,       // #00FF85
+        VulnSeverity.info => AppColors.v3Intel,     // #00D4FF
       };
 
   @override
   Widget build(BuildContext context) {
     final v = vulnerability;
-    final isCritical = v.severity == VulnSeverity.critical;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardTheme.color,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isCritical 
-                  ? AppColors.criticalFg.withValues(alpha: 0.4) 
-                  : (isDark ? AppColors.border : AppColors.lightBorder),
-              width: isCritical ? 1.5 : 1,
-            ),
-            boxShadow: isDark 
-              ? (isCritical ? [BoxShadow(color: AppColors.criticalFg.withValues(alpha: 0.1), blurRadius: 15)] : null)
-              : [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Stack(
-              children: [
-                if (isCritical)
-                  Positioned(
-                    left: 0,
-                    top: 0,
-                    bottom: 0,
-                    width: 4,
-                    child: Container(color: AppColors.criticalFg),
-                  ),
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (v.cveId != null)
-                                  Text(
-                                    v.cveId!.toUpperCase(),
-                                    style: TextStyle(
-                                      color: isDark ? AppColors.textCode : AppColors.deepBlue,
-                                      fontFamily: 'monospace',
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 1,
-                                    ),
-                                  ),
-                                const Gap(4),
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: AppColors.dynamicCardBg(context),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: AppColors.dynamicCardBorder(context),
+          width: 1,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          child: Stack(
+            children: [
+              // Left 2px severity border line
+              Positioned(
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: 2,
+                child: Container(color: _severityColor),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (v.cveId != null)
                                 Text(
-                                  v.title,
+                                  '● ${v.cveId!.toUpperCase()}',
                                   style: TextStyle(
-                                    color: isDark ? AppColors.textPrimary : AppColors.lightTextPrimary,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w800,
-                                    height: 1.2,
+                                    color: _severityColor,
+                                    fontFamily: 'monospace',
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 0.5,
                                   ),
                                 ),
-                              ],
-                            ),
+                              const Gap(4),
+                              Text(
+                                v.title,
+                                style: TextStyle(
+                                  color: AppColors.dynamicTextPrimary(context),
+                                  fontSize: 14.5,
+                                  fontFamily: 'monospace',
+                                  fontWeight: FontWeight.bold,
+                                  height: 1.2,
+                                ),
+                              ),
+                            ],
                           ),
-                          const Gap(12),
-                          SeverityBadge(v.severity.label),
-                        ],
-                      ),
-                      const Gap(12),
-                      Text(
-                        v.description,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: isDark ? AppColors.textSecondary : AppColors.lightTextSecondary,
-                          fontSize: 13,
-                          height: 1.4,
                         ),
-                      ),
-                      const Gap(16),
-                      Row(
-                        children: [
-                          StatusBadge(v.status.label),
-                          const Gap(8),
-                          if (v.assignedTo != null)
-                            Flexible(
-                              child: _MetaItem(
-                                icon: Icons.person_3_outlined,
-                                label: v.assignedTo!,
-                              ),
-                            ),
-                          const Spacer(),
-                          Flexible(
-                            child: _MetaItem(
-                              icon: Icons.terminal_outlined,
-                              label: v.projectName,
+                        const Gap(8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: _severityColor.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: _severityColor.withValues(alpha: 0.4), width: 1),
+                          ),
+                          child: Text(
+                            v.severity.label.toUpperCase(),
+                            style: TextStyle(
+                              color: _severityColor,
+                              fontSize: 9.5,
+                              fontFamily: 'monospace',
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
                             ),
                           ),
-                        ],
+                        ),
+                      ],
+                    ),
+                    const Gap(8),
+                    Text(
+                      v.description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColors.dynamicTextSecondary(context),
+                        fontSize: 11.5,
+                        fontFamily: 'monospace',
+                        height: 1.35,
                       ),
-                      const Gap(16),
-                      Stack(
-                        children: [
-                          Container(
-                            height: 4,
-                            width: double.infinity,
+                    ),
+                    const Gap(12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'TARGET: ${v.projectName.toUpperCase()}',
+                          style: TextStyle(
+                            color: AppColors.dynamicTextMuted(context),
+                            fontSize: 9.5,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                        Text(
+                          _timeAgo(v.updatedAt).toUpperCase(),
+                          style: TextStyle(
+                            color: AppColors.dynamicTextMuted(context),
+                            fontSize: 9.5,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Gap(8),
+                    // Bottom Remediation Progress Bar
+                    Stack(
+                      children: [
+                        Container(
+                          height: 3,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: AppColors.dynamicOuterBg(context),
+                            borderRadius: BorderRadius.circular(1.5),
+                          ),
+                        ),
+                        FractionallySizedBox(
+                          widthFactor: v.remediationProgress.clamp(0.05, 1.0),
+                          child: Container(
+                            height: 3,
                             decoration: BoxDecoration(
-                              color: isDark ? AppColors.bg800 : AppColors.lightScaffold,
-                              borderRadius: BorderRadius.circular(2),
+                              color: _severityColor,
+                              borderRadius: BorderRadius.circular(1.5),
                             ),
                           ),
-                          FractionallySizedBox(
-                            widthFactor: v.remediationProgress,
-                            child: Container(
-                              height: 4,
-                              decoration: BoxDecoration(
-                                color: _severityColor,
-                                borderRadius: BorderRadius.circular(2),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: _severityColor.withValues(alpha: 0.5),
-                                    blurRadius: 4,
-                                  )
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Gap(8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'TYPE: ${v.type.label.toUpperCase()}',
-                            style: TextStyle(
-                              color: isDark ? AppColors.textTertiary : AppColors.lightTextTertiary,
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                          Text(
-                            _timeAgo(v.updatedAt).toUpperCase(),
-                            style: TextStyle(
-                              color: isDark ? AppColors.textTertiary : AppColors.lightTextTertiary,
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
     )
         .animate(delay: (index * 50).ms)
-        .fadeIn(duration: 400.ms)
+        .fadeIn(duration: 300.ms)
         .slideX(begin: 0.05, end: 0, curve: Curves.easeOutQuad);
   }
 
@@ -207,38 +187,6 @@ class VulnCard extends StatelessWidget {
     if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
     if (diff.inHours < 24) return '${diff.inHours}h ago';
     return '${diff.inDays}d ago';
-  }
-}
-
-class _MetaItem extends StatelessWidget {
-  const _MetaItem({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final color = isDark ? AppColors.textTertiary : AppColors.lightTextTertiary;
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 12, color: color),
-        const Gap(4),
-        Flexible(
-          child: Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-            ),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
   }
 }
 
@@ -258,89 +206,74 @@ class VulnStatsRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final s = ref.watch(l10nProvider);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          _StatCard(label: s.total, value: '$total', color: isDark ? AppColors.textPrimary : AppColors.lightTextPrimary),
-          const Gap(8),
-          _StatCard(label: s.critical, value: '$critical', color: AppColors.criticalFg, isAlert: critical > 0),
-          const Gap(8),
-          _StatCard(label: s.open, value: '$open', color: AppColors.highFg),
-          const Gap(8),
-          _StatCard(label: s.fixed, value: '$remediated', color: AppColors.lowFg),
+          Expanded(
+            child: _StatBox(
+              label: 'TOTAL',
+              value: '$total',
+              color: AppColors.dynamicTextPrimary(context),
+            ),
+          ),
+          const Gap(12),
+          Expanded(
+            child: _StatBox(
+              label: 'CRITICAL',
+              value: '$critical',
+              color: AppColors.v3Critical,
+            ),
+          ),
         ],
       ),
-    ).animate().fadeIn(duration: 600.ms).slideY(begin: -0.1, end: 0);
+    ).animate().fadeIn(duration: 400.ms);
   }
 }
 
-class _StatCard extends StatelessWidget {
-  const _StatCard({
+class _StatBox extends StatelessWidget {
+  const _StatBox({
     required this.label,
     required this.value,
     required this.color,
-    this.isAlert = false,
   });
 
   final String label;
   final String value;
   final Color color;
-  final bool isAlert;
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.bg800 : AppColors.lightSurface,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isAlert 
-                ? AppColors.criticalFg.withValues(alpha: 0.5) 
-                : (isDark ? AppColors.border : AppColors.lightBorder),
-            width: isAlert ? 1.5 : 1,
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+      decoration: BoxDecoration(
+        color: AppColors.dynamicCardBg(context),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.dynamicCardBorder(context), width: 1),
+      ),
+      child: Column(
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: AppColors.dynamicTextMuted(context),
+              fontSize: 10,
+              fontFamily: 'monospace',
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1,
+            ),
           ),
-          boxShadow: isDark ? null : [
-            BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 4, offset: const Offset(0, 2))
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              value,
-              style: TextStyle(
-                color: color,
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-                fontFamily: 'monospace',
-              ),
+          const Gap(4),
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontSize: 24,
+              fontWeight: FontWeight.w900,
+              fontFamily: 'monospace',
             ),
-            const Gap(2),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    color: isDark ? AppColors.textTertiary : AppColors.lightTextTertiary,
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

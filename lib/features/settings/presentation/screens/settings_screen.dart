@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -9,7 +8,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/localization/app_translations.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
-import '../../../../shared/widgets/redops_header.dart';
+import '../../../../shared/widgets/ai_assistant_dialog.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -22,156 +21,239 @@ class SettingsScreen extends ConsumerWidget {
     final auth = ref.watch(firebaseAuthProvider);
     final user = auth?.currentUser;
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryColor = isDark ? AppColors.redPrimary : AppColors.deepBlue;
-
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: isDark
-                ? [AppColors.bg900, AppColors.cardBg]
-                : [AppColors.lightScaffold, Colors.white],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              RedOpsHeader(
-                title: s.settingsTitle,
-                subtitle: s.settingsSubtitle,
-              ),
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  children: [
-                    _buildOperatorCard(context, user, primaryColor, isDark),
-                    const Gap(24),
-                    _buildSectionHeader('OPERATOR PREFERENCES', isDark),
-                    _buildSettingTile(
-                      context,
-                      icon: Icons.dark_mode_outlined,
-                      title: s.themeMode,
-                      subtitle: themeMode == ThemeMode.dark ? 'Dark Mode Active' : 'Light Mode Active',
-                      trailing: Switch(
-                        value: themeMode == ThemeMode.dark,
-                        onChanged: (val) {
-                          ref.read(themeModeProvider.notifier).state = val ? ThemeMode.dark : ThemeMode.light;
-                        },
-                        activeThumbColor: primaryColor,
-                      ),
-                    ),
-                    const Gap(12),
-                    _buildSettingTile(
-                      context,
-                      icon: Icons.language_outlined,
-                      title: s.language,
-                      subtitle: locale.languageCode == 'en' ? 'English (US)' : 'العربية',
-                      onTap: () {
-                        ref.read(languageProvider.notifier).state = locale.languageCode == 'en' ? const Locale('ar') : const Locale('en');
+      backgroundColor: AppColors.v3Bg, // #080824
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildTopHeader(),
+            const Gap(10),
+            _buildTitleSection(),
+            const Gap(14),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                children: [
+                  _buildOperatorCard(context, user),
+                  const Gap(20),
+                  _buildSectionHeader('OPERATOR PREFERENCES'),
+                  _buildSettingTile(
+                    context,
+                    icon: Icons.dark_mode_outlined,
+                    title: s.themeMode,
+                    subtitle: themeMode == ThemeMode.dark ? 'Dark Mode Active' : 'Light Mode Active',
+                    trailing: Switch(
+                      value: themeMode == ThemeMode.dark,
+                      onChanged: (val) {
+                        ref.read(themeModeProvider.notifier).state = val ? ThemeMode.dark : ThemeMode.light;
                       },
-                      trailing: const Icon(Icons.swap_horiz, color: AppColors.textTertiary),
+                      activeTrackColor: AppColors.v3OpsRed,
                     ),
-                    const Gap(12),
-                    _buildSettingTile(
-                      context,
-                      icon: Icons.lock_outline,
-                      title: 'Security PIN Protocol',
-                      subtitle: ref.watch(isPinEnabledProvider) ? 'Access code configured' : 'Set your secure PIN code',
-                      onTap: () => context.push(AppRoutes.pinSetup),
-                      trailing: Icon(
-                        ref.watch(isPinEnabledProvider) ? Icons.verified_user : Icons.add_moderator, 
-                        color: ref.watch(isPinEnabledProvider) ? AppColors.live : primaryColor, 
-                        size: 20
-                      ),
+                  ),
+                  const Gap(10),
+                  _buildSettingTile(
+                    context,
+                    icon: Icons.language_outlined,
+                    title: s.language,
+                    subtitle: locale.languageCode == 'en' ? 'English (US)' : 'العربية',
+                    onTap: () {
+                      ref.read(languageProvider.notifier).state = locale.languageCode == 'en' ? const Locale('ar') : const Locale('en');
+                    },
+                    trailing: const Icon(Icons.swap_horiz, color: AppColors.v3TextMuted),
+                  ),
+                  const Gap(20),
+                  _buildSectionHeader('SECURITY & AUTHENTICATION'),
+                  _buildSettingTile(
+                    context,
+                    icon: Icons.lock_outline,
+                    title: 'Security PIN Protocol',
+                    subtitle: ref.watch(isPinEnabledProvider) ? 'Access PIN configured' : 'Set your secure PIN code',
+                    onTap: () => context.push(AppRoutes.pinSetup),
+                    trailing: Icon(
+                      ref.watch(isPinEnabledProvider) ? Icons.verified_user : Icons.add_moderator,
+                      color: ref.watch(isPinEnabledProvider) ? AppColors.v3Live : AppColors.v3OpsRed,
+                      size: 20,
                     ),
-                    const Gap(12),
-                    ref.watch(isBiometricsSupportedProvider).when(
-                      data: (isSupported) => isSupported 
+                  ),
+                  const Gap(10),
+                  ref.watch(isBiometricsSupportedProvider).when(
+                    data: (isSupported) => isSupported
                         ? _buildSettingTile(
                             context,
                             icon: Icons.fingerprint,
                             title: 'Biometric Unlock',
-                            subtitle: 'Use fingerprint for quick access',
+                            subtitle: 'Use fingerprint / Face ID access',
                             trailing: Switch(
                               value: ref.watch(securitySettingsProvider).isBiometricsEnabled,
                               onChanged: (val) async {
                                 await ref.read(authControllerProvider.notifier).toggleBiometrics(val);
                               },
-                              activeThumbColor: primaryColor,
+                              activeTrackColor: AppColors.v3OpsRed,
                             ),
                           )
                         : const SizedBox.shrink(),
-                      loading: () => const SizedBox.shrink(),
-                      error: (_, __) => const SizedBox.shrink(),
-                    ),
-                    const Gap(24),
-                    _buildSectionHeader('TEAM COLLABORATION', isDark),
-                    _buildSettingTile(
-                      context,
-                      icon: Icons.forum_outlined,
-                      title: 'Tactical Chat Room',
-                      subtitle: 'Secure audio & text team exchange',
-                      onTap: () => context.push(AppRoutes.chatForum),
-                      trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: AppColors.textTertiary),
-                    ),
-                    const Gap(24),
-                    _buildSectionHeader('WEB CONSOLE GATEWAY', isDark),
-                    _buildWebConsoleCard(context, isDark),
-                    const Gap(24),
-                    _buildSectionHeader('SYSTEM STATUS', isDark),
-                    _buildSystemInfo(isDark),
-                    const Gap(24),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
-                        icon: const Icon(Icons.logout, size: 18),
-                        label: Text(s.terminateSession),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.redPrimary.withValues(alpha: 0.1),
-                          foregroundColor: AppColors.redPrimary,
-                          side: const BorderSide(color: AppColors.redPrimary, width: 1),
-                        ),
+                    loading: () => const SizedBox.shrink(),
+                    error: (_, __) => const SizedBox.shrink(),
+                  ),
+                  const Gap(20),
+                  _buildSectionHeader('AI & TEAM COLLABORATION'),
+                  _buildSettingTile(
+                    context,
+                    icon: Icons.auto_awesome,
+                    title: 'RedOps Cyber AI Assistant',
+                    subtitle: 'Powered by Gemini API & Threat AI',
+                    onTap: () => AiAssistantDialog.show(context),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.v3TextMuted),
+                  ),
+                  const Gap(10),
+                  _buildSettingTile(
+                    context,
+                    icon: Icons.forum_outlined,
+                    title: 'Tactical Chat Lounge',
+                    subtitle: 'Encrypted operator messaging',
+                    onTap: () => context.push(AppRoutes.chatForum),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.v3TextMuted),
+                  ),
+                  const Gap(20),
+                  _buildSectionHeader('WEB CONSOLE GATEWAY'),
+                  _buildWebConsoleTile(context),
+                  const Gap(20),
+                  _buildSectionHeader('SYSTEM INFRASTRUCTURE'),
+                  _buildSystemStatusCard(),
+                  const Gap(20),
+                  _buildSectionHeader('DEVELOPER & INTELLECTUAL PROPERTY'),
+                  _buildDeveloperCreditCard(context),
+                  const Gap(24),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton.icon(
+                      onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
+                      icon: const Icon(Icons.logout, size: 18),
+                      label: Text(
+                        s.terminateSession,
+                        style: const TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.bold),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.v3OpsRed.withValues(alpha: 0.15),
+                        foregroundColor: AppColors.v3OpsRed,
+                        side: const BorderSide(color: AppColors.v3OpsRed, width: 1),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       ),
                     ),
-                    const Gap(40),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildOperatorCard(BuildContext context, dynamic user, Color primaryColor, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.cardBg.withValues(alpha: 0.96) : Colors.white.withValues(alpha: 0.96),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: primaryColor.withValues(alpha: 0.16)),
-        boxShadow: [
-          BoxShadow(
-            color: primaryColor.withValues(alpha: 0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+  Widget _buildTopHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: AppColors.v3Intel.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: AppColors.v3Intel.withValues(alpha: 0.3),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: const BoxDecoration(
+                    color: AppColors.v3Intel,
+                    shape: BoxShape.circle,
+                  ),
+                ).animate(onPlay: (c) => c.repeat(reverse: true)).fade(begin: 0.3, end: 1.0),
+                const Gap(6),
+                const Text(
+                  'SYSTEM SETTINGS',
+                  style: TextStyle(
+                    color: AppColors.v3Intel,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'monospace',
+                    letterSpacing: 1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Text(
+            'v1.0.0-STABLE',
+            style: TextStyle(
+              color: AppColors.v3Intel,
+              fontSize: 10.5,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'monospace',
+            ),
           ),
         ],
+      ).animate().fadeIn(duration: 400.ms),
+    );
+  }
+
+  Widget _buildTitleSection() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Control Center',
+            style: TextStyle(
+              color: AppColors.v3TextPrimary,
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
+              fontFamily: 'monospace',
+              letterSpacing: 0.5,
+            ),
+          ),
+          Gap(2),
+          Text(
+            '// operator profile & security protocols',
+            style: TextStyle(
+              color: AppColors.v3TextMuted,
+              fontSize: 11.5,
+              fontFamily: 'monospace',
+            ),
+          ),
+        ],
+      ).animate().fadeIn(delay: 150.ms),
+    );
+  }
+
+  Widget _buildOperatorCard(BuildContext context, dynamic user) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.v3CardBg, // #0C0C38
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.v3CardBorder, width: 1),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: primaryColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(14),
+              color: AppColors.v3OpsRed.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.v3OpsRed.withValues(alpha: 0.3)),
             ),
-            child: Icon(Icons.person_outline, color: primaryColor, size: 24),
+            child: const Icon(Icons.person_outline, color: AppColors.v3OpsRed, size: 24),
           ),
           const Gap(14),
           Expanded(
@@ -180,18 +262,20 @@ class SettingsScreen extends ConsumerWidget {
               children: [
                 Text(
                   user?.displayName ?? 'ANONYMOUS OPERATOR',
-                  style: TextStyle(
-                    color: isDark ? AppColors.textPrimary : AppColors.lightTextPrimary,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
+                  style: const TextStyle(
+                    color: AppColors.v3TextPrimary,
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'monospace',
                   ),
                 ),
                 const Gap(4),
                 Text(
                   user?.email ?? 'No identity linked',
-                  style: TextStyle(
-                    color: isDark ? AppColors.textTertiary : AppColors.lightTextTertiary,
-                    fontSize: 12,
+                  style: const TextStyle(
+                    color: AppColors.v3TextMuted,
+                    fontSize: 11,
+                    fontFamily: 'monospace',
                   ),
                 ),
               ],
@@ -200,26 +284,27 @@ class SettingsScreen extends ConsumerWidget {
           IconButton(
             onPressed: () => context.push(AppRoutes.profile),
             icon: const Icon(Icons.arrow_forward_ios, size: 16),
-            color: primaryColor,
+            color: AppColors.v3OpsRed,
           ),
         ],
       ),
-    ).animate().fadeIn(delay: 100.ms).slideY(begin: 0.06, end: 0);
+    ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.05, end: 0);
   }
 
-  Widget _buildSectionHeader(String title, bool isDark) {
+  Widget _buildSectionHeader(String title) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12, left: 4),
+      padding: const EdgeInsets.only(bottom: 8, left: 2),
       child: Text(
         title.toUpperCase(),
-        style: TextStyle(
-          color: isDark ? AppColors.redPrimary : AppColors.deepBlue,
+        style: const TextStyle(
+          color: AppColors.v3TextMuted,
           fontSize: 10,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 2,
+          fontWeight: FontWeight.bold,
+          fontFamily: 'monospace',
+          letterSpacing: 1.2,
         ),
       ),
-    ).animate().fadeIn(delay: 100.ms).slideX(begin: -0.1, end: 0);
+    );
   }
 
   Widget _buildSettingTile(
@@ -230,45 +315,39 @@ class SettingsScreen extends ConsumerWidget {
     Widget? trailing,
     VoidCallback? onTap,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Container(
+      margin: const EdgeInsets.only(bottom: 2),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.cardBg.withValues(alpha: 0.9) : Colors.white.withValues(alpha: 0.96),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isDark ? AppColors.border : AppColors.lightBorder,
-          width: 1,
-        ),
+        color: AppColors.v3CardBg,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.v3CardBorder, width: 1),
       ),
       child: ListTile(
         onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: isDark ? AppColors.bg800 : AppColors.lightScaffold,
-            borderRadius: BorderRadius.circular(10),
+            color: AppColors.v3OuterBg,
+            borderRadius: BorderRadius.circular(6),
           ),
-          child: Icon(
-            icon,
-            color: isDark ? AppColors.textSecondary : AppColors.lightTextSecondary,
-            size: 20,
-          ),
+          child: Icon(icon, color: AppColors.v3Intel, size: 18),
         ),
         title: Text(
           title,
-          style: TextStyle(
-            color: isDark ? AppColors.textPrimary : AppColors.lightTextPrimary,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
+          style: const TextStyle(
+            color: AppColors.v3TextPrimary,
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            fontFamily: 'monospace',
           ),
         ),
         subtitle: Text(
           subtitle,
-          style: TextStyle(
-            color: isDark ? AppColors.textTertiary : AppColors.lightTextTertiary,
-            fontSize: 12,
+          style: const TextStyle(
+            color: AppColors.v3TextMuted,
+            fontSize: 10.5,
+            fontFamily: 'monospace',
           ),
         ),
         trailing: trailing,
@@ -276,115 +355,168 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSystemInfo(bool isDark) {
-    final primaryColor = isDark ? AppColors.redPrimary : AppColors.deepBlue;
+  Widget _buildWebConsoleTile(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: primaryColor.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: primaryColor.withValues(alpha: 0.2)),
+        color: AppColors.v3CardBg,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.v3CardBorder, width: 1),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Codename', style: TextStyle(color: isDark ? AppColors.textTertiary : AppColors.lightTextTertiary, fontSize: 12)),
-              Text('NIGHTFALL', style: TextStyle(color: primaryColor, fontSize: 12, fontWeight: FontWeight.bold)),
+              const Icon(Icons.dashboard_customize_outlined, color: AppColors.v3OpsRed, size: 20),
+              const Gap(10),
+              const Text(
+                'RedOps Hub Web Console',
+                style: TextStyle(
+                  color: AppColors.v3TextPrimary,
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'monospace',
+                ),
+              ),
             ],
           ),
-          const Gap(10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Version', style: TextStyle(color: isDark ? AppColors.textTertiary : AppColors.lightTextTertiary, fontSize: 12)),
-              Text('1.0.0-STABLE', style: TextStyle(color: isDark ? AppColors.textSecondary : AppColors.lightTextSecondary, fontSize: 12)),
-            ],
+          const Gap(6),
+          const Text(
+            'Access cloud command center, live C2 terminals, Nmap recon scanner, MITRE matrix, and PDF reports.',
+            style: TextStyle(
+              color: AppColors.v3TextSecondary,
+              fontSize: 11,
+              fontFamily: 'monospace',
+              height: 1.35,
+            ),
           ),
-          const Gap(10),
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Connection', style: TextStyle(color: AppColors.textTertiary, fontSize: 12)),
-              Text('Secure Tunnel Active', style: TextStyle(color: AppColors.live, fontSize: 12, fontWeight: FontWeight.bold)),
-            ],
-          ),
-        ],
-      ),
-    ).animate().shimmer(delay: 1.seconds, duration: 2.seconds);
-  }
-
-
-
-  Widget _buildWebConsoleCard(BuildContext context, bool isDark) {
-    final primaryColor = isDark ? AppColors.redPrimary : AppColors.deepBlue;
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.cardBg.withValues(alpha: 0.96) : Colors.white.withValues(alpha: 0.96),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: primaryColor.withValues(alpha: 0.16)),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () => context.push(AppRoutes.webConsole),
-            child: Padding(
-              padding: const EdgeInsets.all(18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.dashboard_customize_outlined, color: primaryColor, size: 22),
-                      const Gap(10),
-                      Text(
-                        'RedOps Hub Web Console',
-                        style: TextStyle(
-                          color: isDark ? AppColors.textPrimary : AppColors.lightTextPrimary,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const Spacer(),
-                      const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.textTertiary),
-                    ],
-                  ),
-                  const Gap(10),
-                  Text(
-                    'Unlock advanced operations on the big screen. Sync your mobile account to access C2 terminal shells, network recon scanner, credential vault, MITRE matrix mapping, and PDF report generator.',
-                    style: TextStyle(
-                      color: isDark ? AppColors.textTertiary : AppColors.lightTextTertiary,
-                      fontSize: 11.5,
-                      height: 1.5,
-                    ),
-                  ),
-                  const Gap(16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () => context.push(AppRoutes.webConsole),
-                      icon: const Icon(Icons.info_outline, size: 16),
-                      label: const Text('EXPLORE WEB FEATURES'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+          const Gap(14),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => context.push(AppRoutes.webConsole),
+              icon: const Icon(Icons.launch, size: 16),
+              label: const Text(
+                'LAUNCH WEB CONSOLE',
+                style: TextStyle(fontFamily: 'monospace', fontSize: 11.5, fontWeight: FontWeight.bold, letterSpacing: 1),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.v3OpsRed,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
 
+  Widget _buildSystemStatusCard() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.v3ConsoleBg,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.v3CardBorder, width: 1),
+      ),
+      child: Column(
+        children: [
+          const _SysRow(label: 'Codename', value: 'NIGHTFALL', valueColor: AppColors.v3OpsRed),
+          const Gap(6),
+          const _SysRow(label: 'Version', value: '1.0.0-STABLE', valueColor: AppColors.v3TextSecondary),
+          const Gap(6),
+          const _SysRow(label: 'Connection', value: 'TLS Tunnel Active', valueColor: AppColors.v3Live),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDeveloperCreditCard(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.v3CardBg,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.v3OpsRed.withValues(alpha: 0.4), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.v3OpsRed.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.verified_user, color: AppColors.v3OpsRed, size: 20),
+              ),
+              const Gap(12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'SOFTWARE ENGINEER',
+                      style: TextStyle(color: AppColors.v3Code, fontSize: 9.5, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+                    ),
+                    Gap(2),
+                    Text(
+                      'Abdallah Fawzi Ali',
+                      style: TextStyle(color: AppColors.v3TextPrimary, fontSize: 15, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.v3Elite.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: AppColors.v3Elite.withValues(alpha: 0.4)),
+                ),
+                child: const Text(
+                  'SOLE OWNER',
+                  style: TextStyle(color: AppColors.v3Elite, fontSize: 9, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+                ),
+              ),
+            ],
+          ),
+          const Gap(12),
+          const Text(
+            'RedOps Hub architecture, design, and intellectual property rights are exclusively created, engineered, and owned by Software Engineer Abdallah Fawzi Ali (عبد الله فوزي علي).',
+            style: TextStyle(
+              color: AppColors.v3TextSecondary,
+              fontSize: 11,
+              height: 1.4,
+              fontFamily: 'monospace',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SysRow extends StatelessWidget {
+  const _SysRow({required this.label, required this.value, required this.valueColor});
+
+  final String label;
+  final String value;
+  final Color valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: const TextStyle(color: AppColors.v3TextMuted, fontSize: 11, fontFamily: 'monospace')),
+        Text(value, style: TextStyle(color: valueColor, fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
+      ],
+    );
+  }
 }

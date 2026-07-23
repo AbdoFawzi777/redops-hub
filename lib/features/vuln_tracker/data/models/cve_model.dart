@@ -3,6 +3,8 @@ class CveModel {
   final String description;
   final String severity;
   final double? score;
+  final double? epss;
+  final bool isKev;
   final DateTime publishedDate;
 
   CveModel({
@@ -10,11 +12,30 @@ class CveModel {
     required this.description,
     required this.severity,
     this.score,
+    this.epss,
+    this.isKev = false,
     required this.publishedDate,
   });
 
   factory CveModel.fromJson(Map<String, dynamic> json) {
-    // 1. NIST NVD API format
+    // 1. Shodan CVEDB API format (Ultra-fast, zero key required)
+    if (json.containsKey('cve_id')) {
+      final double? cvss = json['cvss'] != null ? (json['cvss'] as num).toDouble() : null;
+      final double? epssVal = json['epss'] != null ? (json['epss'] as num).toDouble() : null;
+      final bool kev = json['is_kev'] == true;
+
+      return CveModel(
+        id: json['cve_id'] as String? ?? 'CVE-UNKNOWN',
+        description: json['summary'] as String? ?? 'No description available',
+        severity: _inferSeverity(cvss),
+        score: cvss,
+        epss: epssVal,
+        isKev: kev,
+        publishedDate: DateTime.tryParse(json['published_at'] as String? ?? '') ?? DateTime.now(),
+      );
+    }
+
+    // 2. NIST NVD API format
     if (json.containsKey('cve')) {
       final cve = json['cve'];
       final metricsList = cve['metrics']?['cvssMetricV31'] ?? 
@@ -34,7 +55,7 @@ class CveModel {
       );
     }
 
-    // 2. CIRCL CVE Search API format (Fallback)
+    // 3. CIRCL CVE Search API format (Fallback)
     final double? cvss = json['cvss'] != null ? double.tryParse(json['cvss'].toString()) : null;
     return CveModel(
       id: json['id'] ?? 'UNKNOWN',

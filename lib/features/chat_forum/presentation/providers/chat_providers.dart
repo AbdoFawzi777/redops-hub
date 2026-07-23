@@ -79,6 +79,30 @@ class ChatController extends StateNotifier<AsyncValue<void>> {
     }
   }
 
+  Future<bool> deleteMessage(String messageId) async {
+    state = const AsyncValue.loading();
+    try {
+      await _dataSource.deleteMessage(messageId);
+      state = const AsyncValue.data(null);
+      return true;
+    } catch (e, stack) {
+      state = AsyncValue.error(e, stack);
+      return false;
+    }
+  }
+
+  Future<bool> editMessage(String messageId, String newText) async {
+    state = const AsyncValue.loading();
+    try {
+      await _dataSource.editMessage(messageId, newText);
+      state = const AsyncValue.data(null);
+      return true;
+    } catch (e, stack) {
+      state = AsyncValue.error(e, stack);
+      return false;
+    }
+  }
+
   Future<bool> createNewGroup(String name, String description, List<String> members) async {
     state = const AsyncValue.loading();
     try {
